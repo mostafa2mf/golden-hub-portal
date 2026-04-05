@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Eye, EyeOff, Lock, User, Shield, ArrowRight, Globe } from "lucide-react";
 import { toast } from "sonner";
+
+const LandingBackground3D = lazy(() => import("@/components/LandingBackground3D"));
 
 const MAX_USERNAME_LEN = 50;
 const MAX_PASSWORD_LEN = 128;
