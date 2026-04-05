@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { KpiCard } from "@/components/admin/KpiCard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -26,6 +27,7 @@ const activityColors: Record<string, string> = {
 
 const Index = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [chartRange, setChartRange] = useState("30d");
 
   const handleApprove = (name: string) => {
@@ -39,14 +41,14 @@ const Index = () => {
     <AdminLayout title={t("داشبورد", "Dashboard")}>
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <KpiCard icon={Users} value="1,248" title={t("کل کاربران", "Total Users")} trend={12} trendLabel={t("نسبت به ماه قبل", "vs last month")} />
-        <KpiCard icon={Users} value="892" title={t("اینفلوئنسر فعال", "Active Influencers")} trend={8} />
-        <KpiCard icon={Building2} value="156" title={t("کسب‌وکار فعال", "Active Businesses")} trend={15} />
-        <KpiCard icon={Megaphone} value="34" title={t("کمپین فعال", "Active Campaigns")} trend={5} />
-        <KpiCard icon={CalendarDays} value="18" title={t("جلسات فعال", "Active Meetings")} trend={-3} />
-        <KpiCard icon={CheckCircle} value="23" title={t("در انتظار تأیید", "Pending Approvals")} trend={0} />
-        <KpiCard icon={MessageSquare} value="47" title={t("پیام خوانده نشده", "Unread Messages")} trend={22} />
-        <KpiCard icon={TrendingUp} value="₹12.5M" title={t("عملکرد پلتفرم", "Platform Revenue")} trend={18} />
+        <KpiCard icon={Users} value="1,248" title={t("کل کاربران", "Total Users")} trend={12} trendLabel={t("نسبت به ماه قبل", "vs last month")} onClick={() => navigate("/influencers")} />
+        <KpiCard icon={Users} value="892" title={t("اینفلوئنسر فعال", "Active Influencers")} trend={8} onClick={() => navigate("/influencers")} />
+        <KpiCard icon={Building2} value="156" title={t("کسب‌وکار فعال", "Active Businesses")} trend={15} onClick={() => navigate("/businesses")} />
+        <KpiCard icon={Megaphone} value="34" title={t("کمپین فعال", "Active Campaigns")} trend={5} onClick={() => navigate("/campaigns")} />
+        <KpiCard icon={CalendarDays} value="18" title={t("جلسات فعال", "Active Meetings")} trend={-3} onClick={() => navigate("/meetings")} />
+        <KpiCard icon={CheckCircle} value="23" title={t("در انتظار تأیید", "Pending Approvals")} trend={0} onClick={() => navigate("/approvals")} />
+        <KpiCard icon={MessageSquare} value="47" title={t("پیام خوانده نشده", "Unread Messages")} trend={22} onClick={() => navigate("/messages")} />
+        <KpiCard icon={TrendingUp} value="₹12.5M" title={t("عملکرد پلتفرم", "Platform Revenue")} trend={18} onClick={() => navigate("/analytics")} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -111,7 +113,10 @@ const Index = () => {
 
           {/* Pending Review Queue */}
           <div className="glass-card p-5">
-            <h2 className="text-base font-semibold mb-4">{t("صف بررسی", "Pending Review Queue")}</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold">{t("صف بررسی", "Pending Review Queue")}</h2>
+              <button onClick={() => navigate("/approvals")} className="text-xs text-primary hover:underline">{t("مشاهده همه", "View all")}</button>
+            </div>
             <div className="space-y-3">
               {demoInfluencers.filter(i => i.status === "pending").concat(demoBusinesses.filter(b => b.status === "pending") as any).map((item: any, idx) => (
                 <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
@@ -128,7 +133,7 @@ const Index = () => {
                     <StatusBadge status="pending" />
                     <button onClick={() => handleApprove(item.name)} className="p-1.5 rounded-lg hover:bg-success/10 text-success transition-colors"><Check className="w-4 h-4" /></button>
                     <button onClick={() => handleReject(item.name)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"><X className="w-4 h-4" /></button>
-                    <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"><Eye className="w-4 h-4" /></button>
+                    <button onClick={() => navigate("/approvals")} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"><Eye className="w-4 h-4" /></button>
                   </div>
                 </div>
               ))}
@@ -137,10 +142,13 @@ const Index = () => {
 
           {/* Category Performance */}
           <div className="glass-card p-5">
-            <h2 className="text-base font-semibold mb-4">{t("عملکرد دسته‌بندی‌ها", "Category Performance")}</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold">{t("عملکرد دسته‌بندی‌ها", "Category Performance")}</h2>
+              <button onClick={() => navigate("/analytics")} className="text-xs text-primary hover:underline">{t("آنالیز کامل", "Full analytics")}</button>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {categoryPerformance.map((cat) => (
-                <div key={cat.name} className="p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                <div key={cat.name} className="p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => navigate("/analytics")}>
                   <div className="text-sm font-semibold mb-2">{cat.name}</div>
                   <div className="space-y-1 text-xs text-muted-foreground">
                     <div className="flex justify-between"><span>{t("کسب‌وکار", "Businesses")}</span><span className="text-foreground font-medium">{cat.businesses}</span></div>
@@ -155,10 +163,13 @@ const Index = () => {
 
           {/* Today's Meetings */}
           <div className="glass-card p-5">
-            <h2 className="text-base font-semibold mb-4">{t("جلسات امروز", "Today's Meetings")}</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold">{t("جلسات امروز", "Today's Meetings")}</h2>
+              <button onClick={() => navigate("/meetings")} className="text-xs text-primary hover:underline">{t("مشاهده همه", "View all")}</button>
+            </div>
             <div className="space-y-3">
               {demoMeetings.filter(m => m.date === "2026-04-04").map((m) => (
-                <div key={m.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer">
+                <div key={m.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => navigate("/meetings")}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center">
                       <Clock className="w-5 h-5 text-info" />
