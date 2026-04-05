@@ -114,7 +114,7 @@ const Landing = () => {
       {/* Language toggle */}
       <button
         onClick={() => setLang(lang === "fa" ? "en" : "fa")}
-        className="absolute top-6 right-6 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50 text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+        className="absolute top-6 right-6 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50 text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
       >
         <Globe className="w-4 h-4" />
         {lang === "fa" ? "EN" : "FA"}
