@@ -103,6 +103,10 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* 3D Background */}
+      <Suspense fallback={null}>
+        <LandingBackground3D />
+      </Suspense>
       {/* Ambient glow effects */}
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-15%] right-[-5%] w-[400px] h-[400px] rounded-full bg-primary/3 blur-[100px] pointer-events-none" />
