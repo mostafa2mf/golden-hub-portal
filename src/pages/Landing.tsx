@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Eye, EyeOff, Lock, User, Shield, ArrowRight, Globe } from "lucide-react";
 import { toast } from "sonner";
+
+const LandingBackground3D = lazy(() => import("@/components/LandingBackground3D"));
 
 const MAX_USERNAME_LEN = 50;
 const MAX_PASSWORD_LEN = 128;
@@ -101,6 +103,10 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* 3D Background */}
+      <Suspense fallback={null}>
+        <LandingBackground3D />
+      </Suspense>
       {/* Ambient glow effects */}
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-15%] right-[-5%] w-[400px] h-[400px] rounded-full bg-primary/3 blur-[100px] pointer-events-none" />
@@ -108,7 +114,7 @@ const Landing = () => {
       {/* Language toggle */}
       <button
         onClick={() => setLang(lang === "fa" ? "en" : "fa")}
-        className="absolute top-6 right-6 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50 text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+        className="absolute top-6 right-6 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50 text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
       >
         <Globe className="w-4 h-4" />
         {lang === "fa" ? "EN" : "FA"}
