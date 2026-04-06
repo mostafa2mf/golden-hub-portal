@@ -13,7 +13,6 @@ import Campaigns from "./pages/Campaigns.tsx";
 import Meetings from "./pages/Meetings.tsx";
 import Messages from "./pages/Messages.tsx";
 import Analytics from "./pages/Analytics.tsx";
-import Staff from "./pages/Staff.tsx";
 import Security from "./pages/Security.tsx";
 import Settings from "./pages/Settings.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -37,7 +36,6 @@ const App = () => (
             <Route path="/meetings" element={<Meetings />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/analytics" element={<Analytics />} />
-            <Route path="/staff" element={<Staff />} />
             <Route path="/security" element={<Security />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />

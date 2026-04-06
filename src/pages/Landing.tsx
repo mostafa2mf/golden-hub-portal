@@ -1,7 +1,8 @@
 import { lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Shield, ArrowRight, Globe } from "lucide-react";
+import { ArrowRight, Globe } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 
 const LandingBackground3D = lazy(() => import("@/components/LandingBackground3D"));
 
@@ -27,11 +28,22 @@ const Landing = () => {
 
       {/* Branding + CTA */}
       <div className="relative z-10 text-center animate-fade-in">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 mb-6 glow-gold-strong backdrop-blur-sm">
-          <Shield className="w-10 h-10 text-primary" />
-        </div>
-        <h1 className="text-5xl font-bold gold-text mb-3">Bloggerha</h1>
-        <p className="text-base text-muted-foreground mb-10 max-w-md mx-auto">
+        <img src={logoImg} alt="Bloggerha" className="w-24 h-24 mx-auto mb-6 drop-shadow-[0_0_25px_hsl(var(--primary)/0.4)]" />
+        <h1
+          className="text-6xl md:text-7xl font-extrabold mb-3 tracking-tight gold-text"
+          style={{
+            textShadow: "0 0 40px hsl(var(--primary) / 0.3), 0 0 80px hsl(var(--primary) / 0.15)",
+          }}
+        >
+          Bloggerha
+        </h1>
+        <p
+          className="text-lg md:text-xl mb-10 max-w-md mx-auto font-medium"
+          style={{
+            color: "hsl(0 0% 95%)",
+            textShadow: "0 2px 12px hsl(0 0% 0% / 0.5), 0 0 30px hsl(0 0% 0% / 0.3)",
+          }}
+        >
           {t("پلتفرم حرفه‌ای ارتباط اینفلوئنسرها و برندها", "Premium Influencer–Brand Connection Platform")}
         </p>
 

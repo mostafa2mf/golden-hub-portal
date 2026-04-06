@@ -3,7 +3,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { demoBusinesses } from "@/data/demoData";
-import { Search, Eye, Edit, Ban, MessageSquare, CheckCircle, Star, Trash2 } from "lucide-react";
+import { Search, Eye, Edit, Ban, MessageSquare, CheckCircle, Star, Trash2, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -12,15 +12,22 @@ const BusinessesPage = () => {
   const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<typeof demoBusinesses[0] | null>(null);
+  const [addModal, setAddModal] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{ type: string; name: string } | null>(null);
 
   const filtered = demoBusinesses.filter(b => !search || b.name.includes(search) || b.category.includes(search));
 
   return (
     <AdminLayout title={t("کسب‌وکارها", "Businesses")}>
       <div className="glass-card p-4 mb-6">
-        <div className="flex items-center bg-muted/50 rounded-xl border border-border/50 max-w-md">
-          <Search className="w-4 h-4 text-muted-foreground mx-3" />
-          <input placeholder={t("جستجو...", "Search...")} value={search} onChange={e => setSearch(e.target.value)} className="bg-transparent border-none outline-none text-sm py-2.5 pe-3 w-full" />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center bg-muted/50 rounded-xl border border-border/50 flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 text-muted-foreground mx-3" />
+            <input placeholder={t("جستجو...", "Search...")} value={search} onChange={e => setSearch(e.target.value)} className="bg-transparent border-none outline-none text-sm py-2.5 pe-3 w-full" />
+          </div>
+          <Button onClick={() => setAddModal(true)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0">
+            <Plus className="w-4 h-4" />{t("افزودن کسب‌وکار", "Add Business")}
+          </Button>
         </div>
       </div>
 
@@ -45,6 +52,7 @@ const BusinessesPage = () => {
         ))}
       </div>
 
+      {/* Detail Modal */}
       <Dialog open={!!detail} onOpenChange={() => setDetail(null)}>
         <DialogContent className="bg-card border-border/50 rounded-2xl max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{t("جزئیات کسب‌وکار", "Business Details")}</DialogTitle></DialogHeader>
@@ -58,29 +66,53 @@ const BusinessesPage = () => {
                   <StatusBadge status={detail.status} className="mt-1" />
                 </div>
               </div>
-              {/* Profile completion */}
-              <div>
-                <div className="flex justify-between text-sm mb-1"><span className="text-muted-foreground">{t("تکمیل پروفایل", "Profile Completion")}</span><span className="font-medium">75%</span></div>
-                <div className="h-2 bg-muted/50 rounded-full"><div className="h-full w-3/4 gold-gradient rounded-full" /></div>
-              </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("آدرس", "Address")}</span><div className="font-medium mt-1">{detail.address}</div></div>
                 <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("تماس", "Contact")}</span><div className="font-medium mt-1">{detail.contact}</div></div>
                 <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("کمپین فعال", "Active Campaigns")}</span><div className="font-medium mt-1">{detail.activeCampaigns}</div></div>
                 <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("همکاری تکمیل‌شده", "Completed")}</span><div className="font-medium mt-1">{detail.completedCollabs}</div></div>
               </div>
-              <div className="p-4 rounded-xl bg-muted/20">
-                <h4 className="text-sm font-semibold mb-2">{t("یادداشت ادمین", "Admin Notes")}</h4>
-                <textarea className="w-full h-20 bg-muted/30 border border-border/50 rounded-xl p-3 text-sm resize-none outline-none" placeholder={t("یادداشت بنویسید...", "Write a note...")} />
-              </div>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" className="gap-2 rounded-xl"><MessageSquare className="w-4 h-4" />{t("پیام", "Message")}</Button>
                 <Button variant="outline" className="gap-2 rounded-xl"><Edit className="w-4 h-4" />{t("ویرایش", "Edit")}</Button>
                 <Button className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0"><CheckCircle className="w-4 h-4" />{t("تأیید", "Verify")}</Button>
-                <Button variant="destructive" className="gap-2 rounded-xl" onClick={() => toast.success(t("کسب‌وکار غیرفعال شد", "Business deactivated"))}><Ban className="w-4 h-4" />{t("غیرفعال", "Deactivate")}</Button>
+                <Button variant="destructive" className="gap-2 rounded-xl" onClick={() => { setDetail(null); setConfirmDialog({ type: "deactivate", name: detail.name }); }}><Ban className="w-4 h-4" />{t("غیرفعال", "Deactivate")}</Button>
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Business Modal */}
+      <Dialog open={addModal} onOpenChange={setAddModal}>
+        <DialogContent className="bg-card border-border/50 rounded-2xl">
+          <DialogHeader><DialogTitle>{t("افزودن کسب‌وکار", "Add Business")}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("نام کسب‌وکار", "Business Name")}</label><input className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm text-muted-foreground mb-1 block">{t("دسته‌بندی", "Category")}</label>
+                <select className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none">
+                  <option>Cafe</option><option>Restaurant</option><option>Hotel</option><option>Beauty</option><option>Sport</option><option>Art</option>
+                </select>
+              </div>
+              <div><label className="text-sm text-muted-foreground mb-1 block">{t("شهر", "City")}</label><input className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            </div>
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("شخص تماس", "Contact Person")}</label><input className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("تلفن", "Phone")}</label><input className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            <Button className="w-full rounded-xl gold-gradient text-primary-foreground border-0" onClick={() => { toast.success(t("کسب‌وکار اضافه شد", "Business added")); setAddModal(false); }}>{t("افزودن", "Add")}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Dialog */}
+      <Dialog open={!!confirmDialog} onOpenChange={() => setConfirmDialog(null)}>
+        <DialogContent className="bg-card border-border/50 rounded-2xl max-w-sm">
+          <DialogHeader><DialogTitle>{t("تأیید عملیات", "Confirm Action")}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">{t(`آیا مطمئن هستید که می‌خواهید ${confirmDialog?.name} را غیرفعال کنید؟`, `Are you sure you want to deactivate ${confirmDialog?.name}?`)}</p>
+          <div className="flex gap-2 justify-end">
+            <Button variant="ghost" onClick={() => setConfirmDialog(null)}>{t("انصراف", "Cancel")}</Button>
+            <Button variant="destructive" onClick={() => { toast.success(t("غیرفعال شد", "Deactivated")); setConfirmDialog(null); }}>{t("غیرفعال", "Deactivate")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </AdminLayout>
