@@ -3,7 +3,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { demoInfluencers } from "@/data/demoData";
-import { Search, Filter, Grid3X3, List, Eye, Edit, Ban, MessageSquare, Star, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { Search, Filter, Grid3X3, List, Eye, Edit, Ban, MessageSquare, Star, CheckCircle, XCircle, Trash2, UserPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ const InfluencersPage = () => {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [detail, setDetail] = useState<typeof demoInfluencers[0] | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ type: string; name: string } | null>(null);
+  const [addModal, setAddModal] = useState(false);
 
   const cities = [...new Set(demoInfluencers.map(i => i.city))];
   const filtered = demoInfluencers.filter(i => {
@@ -53,6 +54,9 @@ const InfluencersPage = () => {
             <button onClick={() => setViewMode("grid")} className={`p-2 rounded-lg transition-colors ${viewMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><Grid3X3 className="w-4 h-4" /></button>
             <button onClick={() => setViewMode("table")} className={`p-2 rounded-lg transition-colors ${viewMode === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><List className="w-4 h-4" /></button>
           </div>
+          <Button onClick={() => setAddModal(true)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0">
+            <UserPlus className="w-4 h-4" />{t("افزودن اینفلوئنسر", "Add Influencer")}
+          </Button>
         </div>
       </div>
 
@@ -103,7 +107,7 @@ const InfluencersPage = () => {
                     <td className="p-4"><div className="flex gap-1">
                       <button onClick={() => setDetail(inf)} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><Eye className="w-4 h-4" /></button>
                       <button className="p-1.5 rounded-lg hover:bg-info/10 text-info transition-colors"><MessageSquare className="w-4 h-4" /></button>
-                      <button onClick={() => setConfirmDialog({ type: "suspend", name: inf.name })} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"><Ban className="w-4 h-4" /></button>
+                      <button onClick={() => setConfirmDialog({ type: "deactivate", name: inf.name })} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"><Ban className="w-4 h-4" /></button>
                     </div></td>
                   </tr>
                 ))}
@@ -142,19 +146,34 @@ const InfluencersPage = () => {
                   <div><span className="text-muted-foreground">{t("رزرو", "Bookings")}:</span> {detail.bookings}</div>
                 </div>
               </div>
-              <div className="p-4 rounded-xl bg-muted/20">
-                <h4 className="text-sm font-semibold mb-2">{t("یادداشت‌های ادمین", "Admin Notes")}</h4>
-                <textarea className="w-full h-20 bg-muted/30 border border-border/50 rounded-xl p-3 text-sm resize-none outline-none" placeholder={t("یادداشت بنویسید...", "Write a note...")} />
-              </div>
               <div className="flex flex-wrap gap-2">
                 <Button onClick={() => { toast.success(t("پیام ارسال شد", "Message sent")); }} variant="outline" className="gap-2 rounded-xl"><MessageSquare className="w-4 h-4" />{t("پیام", "Message")}</Button>
                 <Button onClick={() => handleAction("verify", detail.name)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0"><CheckCircle className="w-4 h-4" />{detail.verified ? t("لغو تأیید", "Unverify") : t("تأیید", "Verify")}</Button>
-                <Button onClick={() => handleAction("feature", detail.name)} variant="outline" className="gap-2 rounded-xl"><Star className="w-4 h-4" />{t("ویژه", "Feature")}</Button>
-                <Button onClick={() => setConfirmDialog({ type: "suspend", name: detail.name })} variant="destructive" className="gap-2 rounded-xl"><Ban className="w-4 h-4" />{t("تعلیق", "Suspend")}</Button>
+                <Button onClick={() => setConfirmDialog({ type: "deactivate", name: detail.name })} variant="destructive" className="gap-2 rounded-xl"><Ban className="w-4 h-4" />{t("غیرفعال", "Deactivate")}</Button>
                 <Button onClick={() => setConfirmDialog({ type: "delete", name: detail.name })} variant="ghost" className="gap-2 rounded-xl text-destructive"><Trash2 className="w-4 h-4" />{t("حذف", "Delete")}</Button>
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Influencer Modal */}
+      <Dialog open={addModal} onOpenChange={setAddModal}>
+        <DialogContent className="bg-card border-border/50 rounded-2xl">
+          <DialogHeader><DialogTitle>{t("افزودن اینفلوئنسر", "Add Influencer")}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("نام", "Name")}</label><input className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("هندل اینستاگرام", "Instagram Handle")}</label><input className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" placeholder="@username" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm text-muted-foreground mb-1 block">{t("شهر", "City")}</label><input className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+              <div><label className="text-sm text-muted-foreground mb-1 block">{t("دسته‌بندی", "Category")}</label>
+                <select className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none">
+                  <option>Food</option><option>Beauty</option><option>Fashion</option><option>Sport</option><option>Art</option><option>Hotel</option>
+                </select>
+              </div>
+            </div>
+            <Button className="w-full rounded-xl gold-gradient text-primary-foreground border-0" onClick={() => { toast.success(t("اینفلوئنسر اضافه شد", "Influencer added")); setAddModal(false); }}>{t("افزودن", "Add")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 

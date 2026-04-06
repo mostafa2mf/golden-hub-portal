@@ -1,15 +1,15 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   LayoutDashboard, CheckCircle, Building2, Users, Megaphone,
   CalendarDays, MessageSquare, BarChart3, Shield, Settings,
-  LogOut, ChevronLeft, ChevronRight, UserCog, Crown
+  LogOut, ChevronLeft, ChevronRight
 } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 
 const menuItems = [
-  { path: "/", icon: LayoutDashboard, labelFa: "داشبورد", labelEn: "Dashboard" },
+  { path: "/dashboard", icon: LayoutDashboard, labelFa: "داشبورد", labelEn: "Dashboard" },
   { path: "/approvals", icon: CheckCircle, labelFa: "تأییدیه‌ها", labelEn: "Approvals" },
   { path: "/businesses", icon: Building2, labelFa: "کسب‌وکارها", labelEn: "Businesses" },
   { path: "/influencers", icon: Users, labelFa: "اینفلوئنسرها", labelEn: "Influencers" },
@@ -17,8 +17,7 @@ const menuItems = [
   { path: "/meetings", icon: CalendarDays, labelFa: "جلسات", labelEn: "Meetings" },
   { path: "/messages", icon: MessageSquare, labelFa: "پیام‌ها", labelEn: "Messages" },
   { path: "/analytics", icon: BarChart3, labelFa: "تحلیل‌ها", labelEn: "Analytics" },
-  { path: "/staff", icon: UserCog, labelFa: "کارکنان", labelEn: "Staff & Roles" },
-  { path: "/security", icon: Shield, labelFa: "امنیت", labelEn: "Security" },
+  { path: "/security", icon: Shield, labelFa: "امنیت و کارکنان", labelEn: "Security & Staff" },
   { path: "/settings", icon: Settings, labelFa: "تنظیمات", labelEn: "Settings" },
 ];
 
@@ -29,6 +28,7 @@ interface AdminSidebarProps {
 
 export const AdminSidebar = ({ collapsed, onToggle }: AdminSidebarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t, dir } = useLanguage();
 
   return (
@@ -41,9 +41,7 @@ export const AdminSidebar = ({ collapsed, onToggle }: AdminSidebarProps) => {
     >
       {/* Logo */}
       <div className="h-16 flex items-center gap-3 px-4 border-b border-border/50">
-        <div className="w-9 h-9 rounded-xl gold-gradient flex items-center justify-center shrink-0">
-          <Crown className="w-5 h-5 text-primary-foreground" />
-        </div>
+        <img src={logoImg} alt="Bloggerha" className="w-9 h-9 shrink-0 object-contain" />
         {!collapsed && (
           <span className="gold-text text-lg font-bold tracking-tight">Bloggerha</span>
         )}
@@ -76,6 +74,7 @@ export const AdminSidebar = ({ collapsed, onToggle }: AdminSidebarProps) => {
       {/* Logout */}
       <div className="p-3 border-t border-border/50">
         <button
+          onClick={() => navigate("/")}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium w-full text-destructive hover:bg-destructive/10 transition-colors",
             collapsed && "justify-center px-0"
