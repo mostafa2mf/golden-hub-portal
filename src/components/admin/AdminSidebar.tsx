@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, CheckCircle, Building2, Users, Megaphone,
   CalendarDays, MessageSquare, BarChart3, Shield, Settings,
@@ -74,7 +75,7 @@ export const AdminSidebar = ({ collapsed, onToggle }: AdminSidebarProps) => {
       {/* Logout */}
       <div className="p-3 border-t border-border/50">
         <button
-          onClick={() => navigate("/")}
+          onClick={async () => { const { signOut } = useAuth(); await signOut(); navigate("/"); }}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium w-full text-destructive hover:bg-destructive/10 transition-colors",
             collapsed && "justify-center px-0"
