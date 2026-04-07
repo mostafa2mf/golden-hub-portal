@@ -31,6 +31,7 @@ export const AdminSidebar = ({ collapsed, onToggle }: AdminSidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, dir } = useLanguage();
+  const { signOut } = useAuth();
 
   return (
     <aside
@@ -75,7 +76,7 @@ export const AdminSidebar = ({ collapsed, onToggle }: AdminSidebarProps) => {
       {/* Logout */}
       <div className="p-3 border-t border-border/50">
         <button
-          onClick={async () => { const { signOut } = useAuth(); await signOut(); navigate("/"); }}
+          onClick={async () => { await signOut(); navigate("/"); }}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium w-full text-destructive hover:bg-destructive/10 transition-colors",
             collapsed && "justify-center px-0"
