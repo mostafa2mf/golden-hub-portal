@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
   Search, Bell, Plus, Globe, Menu, X, Clock,
@@ -48,6 +49,7 @@ const notificationRoutes: Record<string, string> = {
 
 export const AdminHeader = ({ title, onMenuClick }: AdminHeaderProps) => {
   const { lang, setLang, t } = useLanguage();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -201,7 +203,7 @@ export const AdminHeader = ({ title, onMenuClick }: AdminHeaderProps) => {
             <DropdownMenuItem className="cursor-pointer rounded-lg" onClick={() => navigate("/settings")}>{t("پروفایل", "Profile")}</DropdownMenuItem>
             <DropdownMenuItem className="cursor-pointer rounded-lg" onClick={() => navigate("/settings")}>{t("تنظیمات", "Settings")}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer rounded-lg text-destructive" onClick={() => { toast.success(t("خارج شدید", "Logged out")); navigate("/"); }}>
+            <DropdownMenuItem className="cursor-pointer rounded-lg text-destructive" onClick={async () => { await signOut(); toast.success(t("خارج شدید", "Logged out")); navigate("/"); }}>
               {t("خروج", "Logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
