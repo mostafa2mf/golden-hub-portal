@@ -1,0 +1,80 @@
+-- ============================================================
+-- Backend Code for Supabase — Password Reset System
+-- فایل مرجع بک‌اند برای اجرا در Supabase
+-- ============================================================
+--
+-- این فایل شامل کد بک‌اند مورد نیاز برای سیستم بازنشانی رمز عبور است.
+-- این کدها باید در Supabase Dashboard اجرا شوند.
+--
+-- ============================================================
+
+-- 1. جدول profiles (قبلاً ساخته شده)
+-- CREATE TABLE public.profiles (
+--   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--   user_id UUID NOT NULL,
+--   display_name TEXT,
+--   avatar_url TEXT,
+--   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+--   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+-- );
+
+-- 2. جدول user_roles (قبلاً ساخته شده)
+-- CREATE TABLE public.user_roles (
+--   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--   user_id UUID NOT NULL,
+--   role app_role NOT NULL,
+--   UNIQUE(user_id, role)
+-- );
+
+-- 3. تابع بررسی نقش کاربر (قبلاً ساخته شده)
+-- CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
+-- RETURNS BOOLEAN
+-- LANGUAGE SQL STABLE SECURITY DEFINER
+-- SET search_path = public
+-- AS $$
+--   SELECT EXISTS (
+--     SELECT 1 FROM public.user_roles
+--     WHERE user_id = _user_id AND role = _role
+--   )
+-- $$;
+
+-- ============================================================
+-- نحوه کار بازنشانی رمز عبور:
+-- ============================================================
+--
+-- فرانت‌اند از دو API داخلی Supabase Auth استفاده می‌کند:
+--
+-- A) درخواست بازنشانی (ارسال ایمیل):
+--    supabase.auth.resetPasswordForEmail(email, {
+--      redirectTo: 'https://your-domain.com/reset-password'
+--    })
+--    → Supabase یک ایمیل با لینک بازنشانی به کاربر ارسال می‌کند
+--    → لینک شامل یک token امن است که کاربر را به صفحه /reset-password هدایت می‌کند
+--
+-- B) تغییر رمز عبور (بعد از کلیک روی لینک):
+--    supabase.auth.updateUser({ password: newPassword })
+--    → رمز عبور کاربر در جدول auth.users آپدیت می‌شود
+--    → نیازی به دسترسی مستقیم به جدول auth.users نیست
+--
+-- ============================================================
+-- تنظیمات مورد نیاز در Supabase Dashboard:
+-- ============================================================
+--
+-- 1. Authentication → URL Configuration:
+--    - Site URL: https://your-domain.com
+--    - Redirect URLs: https://your-domain.com/reset-password
+--
+-- 2. Authentication → Email Templates → Reset Password:
+--    - قالب ایمیل بازنشانی رمز عبور قابل سفارشی‌سازی است
+--    - متغیر {{ .ConfirmationURL }} لینک بازنشانی را در ایمیل قرار می‌دهد
+--
+-- ============================================================
+-- فایل‌های فرانت‌اند مرتبط:
+-- ============================================================
+--
+-- src/pages/Landing.tsx       → فرم "فراموشی رمز عبور" (ارسال ایمیل)
+-- src/pages/ResetPassword.tsx → فرم "تنظیم رمز عبور جدید" (بعد از کلیک لینک)
+-- src/App.tsx                 → مسیر /reset-password
+-- src/contexts/AuthContext.tsx → مدیریت احراز هویت
+--
+-- ============================================================
