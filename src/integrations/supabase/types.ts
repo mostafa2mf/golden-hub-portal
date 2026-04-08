@@ -14,6 +14,481 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          icon: string | null
+          id: string
+          message: string
+          message_fa: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          icon?: string | null
+          id?: string
+          message: string
+          message_fa?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          icon?: string | null
+          id?: string
+          message?: string
+          message_fa?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      approvals: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["approval_type"]
+          id: string
+          reject_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["approval_status"]
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["approval_type"]
+          id?: string
+          reject_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["approval_status"]
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: Database["public"]["Enums"]["approval_type"]
+          id?: string
+          reject_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["approval_status"]
+        }
+        Relationships: []
+      }
+      businesses: {
+        Row: {
+          active_campaigns: number
+          address: string | null
+          category_id: string | null
+          city: string | null
+          completed_collabs: number
+          contact_name: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          phone: string | null
+          rating: number | null
+          status: Database["public"]["Enums"]["entity_status"]
+          submitted_at: string
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          active_campaigns?: number
+          address?: string | null
+          category_id?: string | null
+          city?: string | null
+          completed_collabs?: number
+          contact_name?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          rating?: number | null
+          status?: Database["public"]["Enums"]["entity_status"]
+          submitted_at?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          active_campaigns?: number
+          address?: string | null
+          category_id?: string | null
+          city?: string | null
+          completed_collabs?: number
+          contact_name?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          rating?: number | null
+          status?: Database["public"]["Enums"]["entity_status"]
+          submitted_at?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "businesses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_influencers: {
+        Row: {
+          assigned_at: string
+          campaign_id: string
+          id: string
+          influencer_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          campaign_id: string
+          id?: string
+          influencer_id: string
+        }
+        Update: {
+          assigned_at?: string
+          campaign_id?: string
+          id?: string
+          influencer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_influencers_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_influencers_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          budget: string | null
+          business_id: string
+          category_id: string | null
+          city: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          performance: number
+          start_date: string | null
+          status: Database["public"]["Enums"]["campaign_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          budget?: string | null
+          business_id: string
+          category_id?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          performance?: number
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          budget?: string | null
+          business_id?: string
+          category_id?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          performance?: number
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          name_fa: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          name_fa?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          name_fa?: string | null
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          sender_name: string | null
+          sender_role: Database["public"]["Enums"]["message_role"]
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          sender_name?: string | null
+          sender_role: Database["public"]["Enums"]["message_role"]
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          sender_name?: string | null
+          sender_role?: Database["public"]["Enums"]["message_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          is_online: boolean
+          is_pinned: boolean
+          last_message: string | null
+          last_message_at: string | null
+          participant_entity_id: string | null
+          participant_name: string
+          participant_role: Database["public"]["Enums"]["message_role"]
+          unread_count: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_online?: boolean
+          is_pinned?: boolean
+          last_message?: string | null
+          last_message_at?: string | null
+          participant_entity_id?: string | null
+          participant_name: string
+          participant_role: Database["public"]["Enums"]["message_role"]
+          unread_count?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_online?: boolean
+          is_pinned?: boolean
+          last_message?: string | null
+          last_message_at?: string | null
+          participant_entity_id?: string | null
+          participant_name?: string
+          participant_role?: Database["public"]["Enums"]["message_role"]
+          unread_count?: number
+        }
+        Relationships: []
+      }
+      influencers: {
+        Row: {
+          age: number | null
+          avatar_url: string | null
+          bio: string | null
+          bookings_count: number
+          campaigns_count: number
+          category_id: string | null
+          city: string | null
+          created_at: string
+          engagement: number | null
+          followers: number
+          gender: Database["public"]["Enums"]["gender_type"] | null
+          handle: string | null
+          id: string
+          name: string
+          reviews_count: number
+          status: Database["public"]["Enums"]["entity_status"]
+          submitted_at: string
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          bookings_count?: number
+          campaigns_count?: number
+          category_id?: string | null
+          city?: string | null
+          created_at?: string
+          engagement?: number | null
+          followers?: number
+          gender?: Database["public"]["Enums"]["gender_type"] | null
+          handle?: string | null
+          id?: string
+          name: string
+          reviews_count?: number
+          status?: Database["public"]["Enums"]["entity_status"]
+          submitted_at?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          bookings_count?: number
+          campaigns_count?: number
+          category_id?: string | null
+          city?: string | null
+          created_at?: string
+          engagement?: number | null
+          followers?: number
+          gender?: Database["public"]["Enums"]["gender_type"] | null
+          handle?: string | null
+          id?: string
+          name?: string
+          reviews_count?: number
+          status?: Database["public"]["Enums"]["entity_status"]
+          submitted_at?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "influencers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          business_id: string
+          campaign_id: string | null
+          city: string | null
+          created_at: string
+          id: string
+          influencer_id: string
+          location: string | null
+          meeting_date: string
+          meeting_time: string
+          notes: string | null
+          status: Database["public"]["Enums"]["meeting_status"]
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          campaign_id?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          influencer_id: string
+          location?: string | null
+          meeting_date: string
+          meeting_time: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["meeting_status"]
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          campaign_id?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          influencer_id?: string
+          location?: string | null
+          meeting_date?: string
+          meeting_time?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["meeting_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -40,6 +515,67 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          business_id: string
+          campaign_id: string | null
+          content: string | null
+          created_at: string
+          id: string
+          influencer_id: string
+          media_urls: string[] | null
+          rating: number
+          status: Database["public"]["Enums"]["entity_status"]
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          campaign_id?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          influencer_id: string
+          media_urls?: string[] | null
+          rating: number
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          campaign_id?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          influencer_id?: string
+          media_urls?: string[] | null
+          rating?: number
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -74,6 +610,19 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      approval_status: "pending" | "approved" | "rejected"
+      approval_type: "influencer" | "business"
+      campaign_status:
+        | "pending"
+        | "active"
+        | "scheduled"
+        | "completed"
+        | "rejected"
+        | "paused"
+      entity_status: "pending" | "active" | "suspended" | "rejected"
+      gender_type: "male" | "female" | "other"
+      meeting_status: "pending" | "confirmed" | "cancelled" | "completed"
+      message_role: "influencer" | "business" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -202,6 +751,20 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      approval_status: ["pending", "approved", "rejected"],
+      approval_type: ["influencer", "business"],
+      campaign_status: [
+        "pending",
+        "active",
+        "scheduled",
+        "completed",
+        "rejected",
+        "paused",
+      ],
+      entity_status: ["pending", "active", "suspended", "rejected"],
+      gender_type: ["male", "female", "other"],
+      meeting_status: ["pending", "confirmed", "cancelled", "completed"],
+      message_role: ["influencer", "business", "admin"],
     },
   },
 } as const
