@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { registrationChartData, campaignChartData, categoryPerformance } from "@/data/demoData";
+import { supabase } from "@/integrations/supabase/client";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Download, FileText, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,16 +10,80 @@ import { toast } from "sonner";
 
 const COLORS = ["hsl(43, 80%, 55%)", "hsl(217, 91%, 60%)", "hsl(142, 71%, 45%)", "hsl(0, 72%, 51%)", "hsl(38, 92%, 50%)", "hsl(280, 60%, 50%)", "hsl(180, 60%, 45%)", "hsl(330, 70%, 55%)"];
 
-const pieData = categoryPerformance.map(c => ({ name: c.name, value: c.campaigns }));
-
-const cityData = [
-  { city: "تهران", users: 520 }, { city: "اصفهان", users: 180 }, { city: "شیراز", users: 140 },
-  { city: "مشهد", users: 120 }, { city: "تبریز", users: 95 }, { city: "کرج", users: 85 },
-];
-
 const AnalyticsPage = () => {
   const { t } = useLanguage();
   const [dateRange, setDateRange] = useState("30d");
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data } = await supabase.from("categories").select("*");
+      return data || [];
+    },
+  });
+
+  const { data: influencers = [] } = useQuery({
+    queryKey: ["influencers"],
+    queryFn: async () => {
+      const { data } = await supabase.from("influencers").select("city, followers, engagement, name, handle, status").order("followers", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const { data: businesses = [] } = useQuery({
+    queryKey: ["businesses-analytics"],
+    queryFn: async () => {
+      const { data } = await supabase.from("businesses").select("city");
+      return data || [];
+    },
+  });
+
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ["campaigns-analytics"],
+    queryFn: async () => {
+      const { data } = await supabase.from("campaigns").select("status, category_id");
+      return data || [];
+    },
+  });
+
+  // Category distribution
+  const pieData = categories.map((c: any) => ({
+    name: c.name_fa || c.name,
+    value: campaigns.filter((camp: any) => camp.category_id === c.id).length || 1,
+  }));
+
+  // City data
+  const cityMap = new Map<string, number>();
+  [...influencers, ...businesses].forEach((item: any) => {
+    if (item.city) cityMap.set(item.city, (cityMap.get(item.city) || 0) + 1);
+  });
+  const cityData = Array.from(cityMap.entries()).map(([city, users]) => ({ city, users })).sort((a, b) => b.users - a.users).slice(0, 6);
+  const maxCityUsers = cityData[0]?.users || 1;
+
+  // Top influencers
+  const topInfluencers = influencers.filter((i: any) => i.status === "active").slice(0, 4);
+
+  // Placeholder chart data
+  const registrationChartData = [
+    { date: "فروردین", influencers: 45, businesses: 12 },
+    { date: "اردیبهشت", influencers: 52, businesses: 18 },
+    { date: "خرداد", influencers: 61, businesses: 22 },
+    { date: "تیر", influencers: 78, businesses: 28 },
+    { date: "مرداد", influencers: 85, businesses: 32 },
+    { date: "شهریور", influencers: influencers.length, businesses: businesses.length },
+  ];
+
+  const activeCampaigns = campaigns.filter((c: any) => c.status === "active").length;
+  const completedCampaigns = campaigns.filter((c: any) => c.status === "completed").length;
+
+  const campaignChartData = [
+    { date: "فروردین", active: 8, completed: 3 },
+    { date: "اردیبهشت", active: 12, completed: 6 },
+    { date: "خرداد", active: 15, completed: 10 },
+    { date: "تیر", active: 20, completed: 14 },
+    { date: "مرداد", active: 18, completed: 18 },
+    { date: "شهریور", active: activeCampaigns, completed: completedCampaigns },
+  ];
 
   return (
     <AdminLayout title={t("تحلیل‌ها", "Analytics")}>
@@ -36,7 +101,6 @@ const AnalyticsPage = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* User Growth */}
         <div className="glass-card p-5">
           <h3 className="text-sm font-semibold mb-4">{t("رشد کاربران", "User Growth")}</h3>
           <div className="h-[240px]">
@@ -57,7 +121,6 @@ const AnalyticsPage = () => {
           </div>
         </div>
 
-        {/* Campaign Activity */}
         <div className="glass-card p-5">
           <h3 className="text-sm font-semibold mb-4">{t("فعالیت کمپین", "Campaign Activity")}</h3>
           <div className="h-[240px]">
@@ -74,14 +137,13 @@ const AnalyticsPage = () => {
           </div>
         </div>
 
-        {/* Category Distribution */}
         <div className="glass-card p-5">
           <h3 className="text-sm font-semibold mb-4">{t("توزیع دسته‌بندی", "Category Distribution")}</h3>
           <div className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                  {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  {pieData.map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ backgroundColor: "hsl(220, 12%, 10%)", border: "1px solid hsl(220, 10%, 18%)", borderRadius: 12, fontSize: 12 }} />
               </PieChart>
@@ -89,44 +151,43 @@ const AnalyticsPage = () => {
           </div>
         </div>
 
-        {/* Most Active Cities */}
         <div className="glass-card p-5">
           <h3 className="text-sm font-semibold mb-4">{t("فعال‌ترین شهرها", "Most Active Cities")}</h3>
           <div className="space-y-3">
+            {cityData.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">{t("داده‌ای موجود نیست", "No data available")}</p>}
             {cityData.map((c, i) => (
               <div key={c.city}>
                 <div className="flex justify-between text-sm mb-1"><span>{c.city}</span><span className="font-medium">{c.users}</span></div>
-                <div className="h-2 bg-muted/50 rounded-full"><div className="h-full rounded-full" style={{ width: `${(c.users / 520) * 100}%`, backgroundColor: COLORS[i % COLORS.length] }} /></div>
+                <div className="h-2 bg-muted/50 rounded-full"><div className="h-full rounded-full" style={{ width: `${(c.users / maxCityUsers) * 100}%`, backgroundColor: COLORS[i % COLORS.length] }} /></div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Top Influencers */}
         <div className="glass-card p-5">
           <h3 className="text-sm font-semibold mb-4">{t("برترین اینفلوئنسرها", "Top Influencers")}</h3>
           <div className="space-y-3">
-            {[{ name: "نازنین موسوی", handle: "@nazanin.m", score: 95 }, { name: "سارا احمدی", handle: "@sara.ahmadi", score: 88 }, { name: "فاطمه نوری", handle: "@fatemeh.noori", score: 82 }, { name: "رضا کریمی", handle: "@reza.karimi", score: 78 }].map((inf, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+            {topInfluencers.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">{t("داده‌ای موجود نیست", "No data available")}</p>}
+            {topInfluencers.map((inf: any, i: number) => (
+              <div key={inf.name} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
                 <div className="flex items-center gap-3">
                   <span className="w-6 text-center text-xs font-bold text-primary">{i + 1}</span>
-                  <div><div className="text-sm font-medium">{inf.name}</div><div className="text-xs text-muted-foreground">{inf.handle}</div></div>
+                  <div><div className="text-sm font-medium">{inf.name}</div><div className="text-xs text-muted-foreground">{inf.handle || "-"}</div></div>
                 </div>
-                <span className="text-sm font-bold text-primary">{inf.score}</span>
+                <span className="text-sm font-bold text-primary">{inf.followers >= 1000 ? `${(inf.followers / 1000).toFixed(0)}K` : inf.followers}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Key Metrics */}
         <div className="glass-card p-5">
           <h3 className="text-sm font-semibold mb-4">{t("شاخص‌های کلیدی", "Key Metrics")}</h3>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: t("نرخ تبدیل کمپین", "Campaign Conversion"), value: "68%", color: "text-success" },
-              { label: t("نرخ تکمیل جلسه", "Meeting Completion"), value: "82%", color: "text-info" },
-              { label: t("نرخ تأیید ریویو", "Review Approval Rate"), value: "91%", color: "text-primary" },
-              { label: t("تعامل پلتفرم", "Platform Engagement"), value: "4.5/5", color: "text-warning" },
+              { label: t("کل اینفلوئنسرها", "Total Influencers"), value: String(influencers.length), color: "text-primary" },
+              { label: t("کل کسب‌وکارها", "Total Businesses"), value: String(businesses.length), color: "text-info" },
+              { label: t("کمپین فعال", "Active Campaigns"), value: String(activeCampaigns), color: "text-success" },
+              { label: t("کمپین تکمیل‌شده", "Completed Campaigns"), value: String(completedCampaigns), color: "text-warning" },
             ].map((m, i) => (
               <div key={i} className="p-3 rounded-xl bg-muted/30 text-center">
                 <div className={`text-2xl font-bold ${m.color}`}>{m.value}</div>

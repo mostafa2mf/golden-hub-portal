@@ -1,35 +1,54 @@
 import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { demoMessages } from "@/data/demoData";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
+import { supabase } from "@/integrations/supabase/client";
 import { Search, Pin, Send, Image, Paperclip, Archive, Flag, CheckCheck, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const MessagesPage = () => {
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [filter, setFilter] = useState("all");
 
-  const selected = demoMessages.find(m => m.id === selectedChat);
+  const { data: conversations = [] } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: async () => {
+      const { data } = await supabase.from("conversations").select("*").order("last_message_at", { ascending: false });
+      return data || [];
+    },
+  });
 
-  const mockMessages = [
-    { id: "1", text: "سلام، وقتتون بخیر", sender: "user", time: "10:15" },
-    { id: "2", text: "سلام! چطور میتونم کمکتون کنم؟", sender: "admin", time: "10:16" },
-    { id: "3", text: "درباره کمپین جدید سوال داشتم، آیا امکان تغییر زمانبندی وجود داره؟", sender: "user", time: "10:18" },
-    { id: "4", text: "بله، لطفاً جزئیات بیشتر بفرمایید تا بررسی کنم", sender: "admin", time: "10:20" },
-  ];
+  const { data: chatMessages = [] } = useQuery({
+    queryKey: ["chat_messages", selectedChat],
+    queryFn: async () => {
+      if (!selectedChat) return [];
+      const { data } = await supabase.from("chat_messages").select("*").eq("conversation_id", selectedChat).order("created_at", { ascending: true });
+      return data || [];
+    },
+    enabled: !!selectedChat,
+  });
 
-  const handleSend = () => {
-    if (!message.trim()) return;
-    toast.success(t("پیام ارسال شد", "Message sent"));
+  useRealtimeInvalidation("conversations", ["conversations"]);
+
+  const selected = conversations.find((c: any) => c.id === selectedChat);
+
+  const handleSend = async () => {
+    if (!message.trim() || !selectedChat) return;
+    await supabase.from("chat_messages").insert({ conversation_id: selectedChat, content: message, sender_role: "admin" as any, sender_name: "Admin" });
+    await supabase.from("conversations").update({ last_message: message, last_message_at: new Date().toISOString() }).eq("id", selectedChat);
+    queryClient.invalidateQueries({ queryKey: ["chat_messages", selectedChat] });
+    queryClient.invalidateQueries({ queryKey: ["conversations"] });
     setMessage("");
   };
 
-  const filteredMessages = demoMessages.filter(m => {
-    if (filter === "unread") return m.unread > 0;
-    if (filter === "pinned") return m.pinned;
+  const filteredConversations = conversations.filter((m: any) => {
+    if (filter === "unread") return m.unread_count > 0;
+    if (filter === "pinned") return m.is_pinned;
     return true;
   });
 
@@ -52,17 +71,18 @@ const MessagesPage = () => {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto scrollbar-thin">
-              {filteredMessages.map(msg => (
+              {filteredConversations.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">{t("مکالمه‌ای یافت نشد", "No conversations")}</p>}
+              {filteredConversations.map((msg: any) => (
                 <div key={msg.id} onClick={() => setSelectedChat(msg.id)} className={cn("flex items-center gap-3 p-3 cursor-pointer transition-colors border-b border-border/20", selectedChat === msg.id ? "bg-primary/5" : "hover:bg-muted/30")}>
                   <div className="relative">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">{msg.name.charAt(0)}</div>
-                    {msg.online && <span className="absolute -bottom-0.5 -end-0.5 w-3 h-3 rounded-full bg-success border-2 border-card" />}
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">{msg.participant_name.charAt(0)}</div>
+                    {msg.is_online && <span className="absolute -bottom-0.5 -end-0.5 w-3 h-3 rounded-full bg-success border-2 border-card" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center"><span className="text-sm font-medium truncate">{msg.name}</span><span className="text-[10px] text-muted-foreground">{msg.time}</span></div>
+                    <div className="flex justify-between items-center"><span className="text-sm font-medium truncate">{msg.participant_name}</span><span className="text-[10px] text-muted-foreground">{msg.last_message_at ? new Date(msg.last_message_at).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" }) : ""}</span></div>
                     <div className="flex justify-between items-center mt-0.5">
-                      <span className="text-xs text-muted-foreground truncate">{msg.lastMessage}</span>
-                      <div className="flex items-center gap-1">{msg.pinned && <Pin className="w-3 h-3 text-primary" />}{msg.unread > 0 && <span className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">{msg.unread}</span>}</div>
+                      <span className="text-xs text-muted-foreground truncate">{msg.last_message || "-"}</span>
+                      <div className="flex items-center gap-1">{msg.is_pinned && <Pin className="w-3 h-3 text-primary" />}{msg.unread_count > 0 && <span className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">{msg.unread_count}</span>}</div>
                     </div>
                   </div>
                 </div>
@@ -76,13 +96,13 @@ const MessagesPage = () => {
                 <div className="flex items-center justify-between p-3 border-b border-border/50">
                   <div className="flex items-center gap-3">
                     <button onClick={() => setSelectedChat(null)} className="md:hidden p-1.5 rounded-lg hover:bg-muted">←</button>
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">{selected.name.charAt(0)}</div>
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">{selected.participant_name.charAt(0)}</div>
                     <div>
-                      <div className="text-sm font-medium">{selected.name}</div>
+                      <div className="text-sm font-medium">{selected.participant_name}</div>
                       <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        <span className={cn("w-1.5 h-1.5 rounded-full", selected.online ? "bg-success" : "bg-muted-foreground")} />
-                        {selected.online ? t("آنلاین", "Online") : t("آفلاین", "Offline")}
-                        <span className="ms-1 px-1.5 py-0.5 rounded bg-muted text-[10px]">{selected.role === "influencer" ? t("اینفلوئنسر", "Influencer") : t("کسب‌وکار", "Business")}</span>
+                        <span className={cn("w-1.5 h-1.5 rounded-full", selected.is_online ? "bg-success" : "bg-muted-foreground")} />
+                        {selected.is_online ? t("آنلاین", "Online") : t("آفلاین", "Offline")}
+                        <span className="ms-1 px-1.5 py-0.5 rounded bg-muted text-[10px]">{selected.participant_role === "influencer" ? t("اینفلوئنسر", "Influencer") : t("کسب‌وکار", "Business")}</span>
                       </div>
                     </div>
                   </div>
@@ -92,16 +112,16 @@ const MessagesPage = () => {
                   </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
-                  <div className="text-center text-xs text-muted-foreground py-2">{t("امروز", "Today")}</div>
-                  {mockMessages.map(msg => (
-                    <div key={msg.id} className={cn("flex", msg.sender === "admin" ? "justify-start" : "justify-end")}>
-                      <div className={cn("max-w-[75%] px-4 py-2.5 rounded-2xl text-sm", msg.sender === "admin" ? "bg-muted/50 rounded-tl-sm" : "bg-primary/20 text-foreground rounded-tr-sm")}>
-                        <p>{msg.text}</p>
-                        <div className="flex items-center justify-end gap-1 mt-1"><span className="text-[10px] text-muted-foreground">{msg.time}</span>{msg.sender === "admin" && <CheckCheck className="w-3 h-3 text-primary" />}</div>
+                  <div className="text-center text-xs text-muted-foreground py-2">{t("شروع مکالمه", "Conversation start")}</div>
+                  {chatMessages.map((msg: any) => (
+                    <div key={msg.id} className={cn("flex", msg.sender_role === "admin" ? "justify-start" : "justify-end")}>
+                      <div className={cn("max-w-[75%] px-4 py-2.5 rounded-2xl text-sm", msg.sender_role === "admin" ? "bg-muted/50 rounded-tl-sm" : "bg-primary/20 text-foreground rounded-tr-sm")}>
+                        <p>{msg.content}</p>
+                        <div className="flex items-center justify-end gap-1 mt-1"><span className="text-[10px] text-muted-foreground">{new Date(msg.created_at).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}</span>{msg.sender_role === "admin" && <CheckCheck className="w-3 h-3 text-primary" />}</div>
                       </div>
                     </div>
                   ))}
-                  <div className="text-xs text-muted-foreground animate-pulse">{t("در حال تایپ...", "Typing...")}</div>
+                  {chatMessages.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">{t("پیامی وجود ندارد", "No messages yet")}</p>}
                 </div>
                 <div className="p-3 border-t border-border/50">
                   <div className="flex items-center gap-2">
