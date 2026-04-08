@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,9 +22,11 @@ const Landing = () => {
   const [forgotEmail, setForgotEmail] = useState("");
 
   // If already logged in as admin, redirect
-  if (!authLoading && user && isAdmin) {
-    navigate("/dashboard", { replace: true });
-  }
+  useEffect(() => {
+    if (!authLoading && user && isAdmin) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [authLoading, user, isAdmin, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
