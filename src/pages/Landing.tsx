@@ -16,6 +16,9 @@ const Landing = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
 
   // If already logged in as admin, redirect
   if (!authLoading && user && isAdmin) {
