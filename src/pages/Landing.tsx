@@ -116,13 +116,22 @@ const Landing = () => {
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {t("ورود", "Login")}
             </button>
-            <button
-              type="button"
-              onClick={() => setShowLogin(false)}
-              className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
-            >
-              {t("بازگشت", "Back")}
-            </button>
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setShowForgot(true)}
+                className="text-xs text-primary hover:underline transition-colors"
+              >
+                {t("فراموشی رمز عبور", "Forgot Password?")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowLogin(false)}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t("بازگشت", "Back")}
+              </button>
+            </div>
           </form>
         )}
       </div>
