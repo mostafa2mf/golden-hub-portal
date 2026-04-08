@@ -58,7 +58,7 @@ const ResetPassword = () => {
 
         {success ? (
           <div className="text-center space-y-3 bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6">
-            <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
+            <CheckCircle className="w-12 h-12 text-primary mx-auto" />
             <p className="text-foreground font-medium">
               {t("رمز عبور با موفقیت تغییر کرد! در حال انتقال...", "Password updated! Redirecting...")}
             </p>
