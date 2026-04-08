@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Globe, Mail, Lock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import logoImg from "@/assets/logo.png";
@@ -42,6 +43,25 @@ const Landing = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) {
+      toast.error(t("ایمیل خود را وارد کنید", "Enter your email"));
+      return;
+    }
+    setForgotLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: window.location.origin + "/reset-password",
+    });
+    setForgotLoading(false);
+    if (error) {
+      toast.error(t("خطا در ارسال ایمیل", "Error sending reset email"));
+    } else {
+      toast.success(t("لینک بازنشانی به ایمیل شما ارسال شد", "Reset link sent to your email"));
+      setShowForgot(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <Suspense fallback={null}>
@@ -71,7 +91,7 @@ const Landing = () => {
           {t("پلتفرم حرفه‌ای ارتباط اینفلوئنسرها و برندها", "Premium Influencer–Brand Connection Platform")}
         </p>
 
-        {!showLogin ? (
+        {!showLogin && !showForgot ? (
           <button
             onClick={() => setShowLogin(true)}
             className="gold-gradient text-primary-foreground font-semibold text-base px-10 py-3.5 rounded-xl inline-flex items-center gap-3 hover:opacity-90 transition-all glow-gold-strong hover:scale-105 active:scale-100"
@@ -79,6 +99,45 @@ const Landing = () => {
             {t("ورود به پنل مدیریت", "Enter Admin Panel")}
             <ArrowRight className="w-5 h-5" />
           </button>
+        ) : showForgot ? (
+          <form
+            onSubmit={handleForgotPassword}
+            className="w-full max-w-sm mx-auto space-y-4 bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 animate-fade-in"
+          >
+            <h2 className="text-lg font-bold text-foreground mb-2">
+              {t("بازنشانی رمز عبور", "Reset Password")}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {t("ایمیل خود را وارد کنید تا لینک بازنشانی ارسال شود", "Enter your email to receive a reset link")}
+            </p>
+            <div className="relative">
+              <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="email"
+                placeholder={t("ایمیل", "Email")}
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                className="w-full bg-muted/30 border border-border/50 rounded-xl ps-10 pe-4 py-2.5 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
+                autoComplete="email"
+                dir="ltr"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={forgotLoading}
+              className="w-full gold-gradient text-primary-foreground font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
+            >
+              {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {t("ارسال لینک بازنشانی", "Send Reset Link")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForgot(false)}
+              className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+            >
+              {t("بازگشت به ورود", "Back to Login")}
+            </button>
+          </form>
         ) : (
           <form
             onSubmit={handleLogin}
@@ -122,7 +181,7 @@ const Landing = () => {
             <div className="flex items-center justify-between">
               <button
                 type="button"
-                onClick={() => setShowForgot(true)}
+                onClick={() => { setShowForgot(true); setShowLogin(false); }}
                 className="text-xs text-primary hover:underline transition-colors"
               >
                 {t("فراموشی رمز عبور", "Forgot Password?")}

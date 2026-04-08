@@ -18,6 +18,7 @@ import Analytics from "./pages/Analytics.tsx";
 import Security from "./pages/Security.tsx";
 import Settings from "./pages/Settings.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/approvals" element={<ProtectedRoute><Approvals /></ProtectedRoute>} />
               <Route path="/businesses" element={<ProtectedRoute><Businesses /></ProtectedRoute>} />
