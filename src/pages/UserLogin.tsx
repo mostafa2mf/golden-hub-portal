@@ -17,10 +17,11 @@ const UserLogin = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // If already logged in, redirect
-  if (session) {
-    navigate(session.entity_type === "blogger" ? "/blogger-dashboard" : "/business-dashboard", { replace: true });
-  }
+  useEffect(() => {
+    if (session) {
+      navigate(session.entity_type === "blogger" ? "/blogger-dashboard" : "/business-dashboard", { replace: true });
+    }
+  }, [session, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
