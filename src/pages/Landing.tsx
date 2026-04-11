@@ -41,6 +41,7 @@ const Landing = () => {
       toast.error(t("ایمیل یا رمز عبور اشتباه است", "Invalid email or password"));
     } else {
       toast.success(t("خوش آمدید!", "Welcome!"));
+      navigate("/dashboard");
     }
   };
 
