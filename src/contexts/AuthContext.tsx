@@ -8,6 +8,7 @@ interface AuthContextType {
   isAdmin: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null; isAdmin: boolean }>;
+
   signOut: () => Promise<void>;
 }
 
@@ -67,18 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      return { error: error.message, isAdmin: false };
-    }
-    // Wait for session to be set and check admin role
-    const { data: { session } } = await supabase.auth.getSession();
-    let admin = false;
-    if (session?.user) {
-      setSession(session);
-      setUser(session.user);
-      admin = await checkAdminRole(session.user.id);
-    }
-    return { error: null, isAdmin: admin };
+    return { error: error?.message ?? null };
   };
 
   const signOut = async () => {
