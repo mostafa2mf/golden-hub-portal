@@ -187,6 +187,9 @@ export const AdminHeader = ({ title, onMenuClick }: AdminHeaderProps) => {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
         {/* Language */}
         <button onClick={() => setLang(lang === "fa" ? "en" : "fa")} className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-muted transition-colors text-sm font-medium text-muted-foreground">
           <Globe className="w-4 h-4" />{lang === "fa" ? "EN" : "FA"}
