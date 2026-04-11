@@ -1,0 +1,1 @@
+ALTER TABLE public.user_credentials ADD COLUMN keyword TEXT;

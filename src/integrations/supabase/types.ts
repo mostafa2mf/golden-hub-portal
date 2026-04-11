@@ -694,6 +694,7 @@ export type Database = {
           entity_id: string
           entity_type: Database["public"]["Enums"]["credential_entity_type"]
           id: string
+          keyword: string | null
           password: string
           updated_at: string
           username: string
@@ -703,6 +704,7 @@ export type Database = {
           entity_id: string
           entity_type: Database["public"]["Enums"]["credential_entity_type"]
           id?: string
+          keyword?: string | null
           password: string
           updated_at?: string
           username: string
@@ -712,6 +714,7 @@ export type Database = {
           entity_id?: string
           entity_type?: Database["public"]["Enums"]["credential_entity_type"]
           id?: string
+          keyword?: string | null
           password?: string
           updated_at?: string
           username?: string
