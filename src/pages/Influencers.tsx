@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Grid3X3, List, Eye, Ban, MessageSquare, CheckCircle, Trash2, UserPlus } from "lucide-react";
+import { Search, Grid3X3, List, Eye, Ban, MessageSquare, CheckCircle, Trash2, UserPlus, Image as ImageIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ const InfluencersPage = () => {
   const [detail, setDetail] = useState<any>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ type: string; id: string; name: string } | null>(null);
   const [addModal, setAddModal] = useState(false);
-  const [addForm, setAddForm] = useState({ name: "", handle: "", city: "", category: "Food" });
+  const [addForm, setAddForm] = useState({ name: "", handle: "", city: "", category: "Food", phone: "", email: "", bio: "" });
 
   const { data: influencers = [], isLoading } = useQuery({
     queryKey: ["influencers"],
@@ -56,9 +56,20 @@ const InfluencersPage = () => {
 
   const handleAdd = async () => {
     if (!addForm.name.trim()) { toast.error(t("نام الزامی است", "Name is required")); return; }
-    const { error } = await supabase.from("influencers").insert({ name: addForm.name, handle: addForm.handle, city: addForm.city, status: "pending" });
+    const { error } = await supabase.from("influencers").insert({
+      name: addForm.name,
+      handle: addForm.handle || null,
+      city: addForm.city || null,
+      bio: addForm.bio || null,
+      status: "pending",
+    });
     if (error) toast.error(error.message);
-    else { toast.success(t("اینفلوئنسر اضافه شد", "Influencer added")); setAddModal(false); setAddForm({ name: "", handle: "", city: "", category: "Food" }); queryClient.invalidateQueries({ queryKey: ["influencers"] }); }
+    else {
+      toast.success(t("اینفلوئنسر اضافه شد", "Influencer added"));
+      setAddModal(false);
+      setAddForm({ name: "", handle: "", city: "", category: "Food", phone: "", email: "", bio: "" });
+      queryClient.invalidateQueries({ queryKey: ["influencers"] });
+    }
   };
 
   const handleVerify = async (inf: any) => {
@@ -103,20 +114,28 @@ const InfluencersPage = () => {
       {viewMode === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map((inf: any) => (
-            <div key={inf.id} className="glass-card p-5 hover-glow cursor-pointer group transition-all hover:scale-[1.02]" onClick={() => setDetail(inf)}>
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">{inf.name.charAt(0)}</div>
-                <div className="flex items-center gap-1">
+            <div key={inf.id} className="glass-card overflow-hidden hover-glow cursor-pointer group transition-all hover:scale-[1.02]" onClick={() => setDetail(inf)}>
+              {/* Image header */}
+              <div className="h-32 bg-gradient-to-br from-primary/10 via-primary/5 to-card relative flex items-center justify-center">
+                {inf.avatar_url ? (
+                  <img src={inf.avatar_url} alt={inf.name} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity" />
+                ) : (
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">{inf.name.charAt(0)}</div>
+                )}
+                <div className="absolute top-2 end-2 flex items-center gap-1">
                   {inf.verified && <CheckCircle className="w-4 h-4 text-primary" />}
                   <StatusBadge status={inf.status} />
                 </div>
+                <div className="absolute bottom-0 inset-x-0 h-10 bg-gradient-to-t from-card to-transparent" />
               </div>
-              <h3 className="font-semibold text-sm mb-0.5">{inf.name}</h3>
-              <p className="text-xs text-muted-foreground mb-3">{inf.handle || "-"} • {inf.city || "-"}</p>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-2 rounded-lg bg-muted/30"><div className="text-sm font-bold">{inf.followers >= 1000 ? `${(inf.followers / 1000).toFixed(0)}K` : inf.followers}</div><div className="text-[10px] text-muted-foreground">{t("فالوور", "Followers")}</div></div>
-                <div className="p-2 rounded-lg bg-muted/30"><div className="text-sm font-bold">{inf.engagement || 0}%</div><div className="text-[10px] text-muted-foreground">{t("تعامل", "Engage")}</div></div>
-                <div className="p-2 rounded-lg bg-muted/30"><div className="text-sm font-bold">{inf.campaigns_count}</div><div className="text-[10px] text-muted-foreground">{t("کمپین", "Campaigns")}</div></div>
+              <div className="p-4">
+                <h3 className="font-semibold text-sm mb-0.5">{inf.name}</h3>
+                <p className="text-xs text-muted-foreground mb-3">{inf.handle || "-"} • {inf.city || "-"}</p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="p-2 rounded-lg bg-muted/30"><div className="text-sm font-bold">{inf.followers >= 1000 ? `${(inf.followers / 1000).toFixed(0)}K` : inf.followers}</div><div className="text-[10px] text-muted-foreground">{t("فالوور", "Followers")}</div></div>
+                  <div className="p-2 rounded-lg bg-muted/30"><div className="text-sm font-bold">{inf.engagement || 0}%</div><div className="text-[10px] text-muted-foreground">{t("تعامل", "Engage")}</div></div>
+                  <div className="p-2 rounded-lg bg-muted/30"><div className="text-sm font-bold">{inf.campaigns_count}</div><div className="text-[10px] text-muted-foreground">{t("کمپین", "Campaigns")}</div></div>
+                </div>
               </div>
             </div>
           ))}
@@ -163,7 +182,11 @@ const InfluencersPage = () => {
           {detail && (
             <div className="space-y-5">
               <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-3xl">{detail.name.charAt(0)}</div>
+                {detail.avatar_url ? (
+                  <img src={detail.avatar_url} alt={detail.name} className="w-20 h-20 rounded-2xl object-cover" />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-3xl">{detail.name.charAt(0)}</div>
+                )}
                 <div>
                   <div className="flex items-center gap-2"><h2 className="text-xl font-bold">{detail.name}</h2>{detail.verified && <CheckCircle className="w-5 h-5 text-primary" />}</div>
                   <p className="text-sm text-muted-foreground">{detail.handle || "-"} • {detail.city || "-"}</p>
@@ -201,9 +224,14 @@ const InfluencersPage = () => {
         <DialogContent className="bg-card border-border/50 rounded-2xl">
           <DialogHeader><DialogTitle>{t("افزودن اینفلوئنسر", "Add Influencer")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><label className="text-sm text-muted-foreground mb-1 block">{t("نام", "Name")}</label><input value={addForm.name} onChange={e => setAddForm(p => ({ ...p, name: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("نام", "Name")} *</label><input value={addForm.name} onChange={e => setAddForm(p => ({ ...p, name: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
             <div><label className="text-sm text-muted-foreground mb-1 block">{t("هندل اینستاگرام", "Instagram Handle")}</label><input value={addForm.handle} onChange={e => setAddForm(p => ({ ...p, handle: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" placeholder="@username" /></div>
-            <div><label className="text-sm text-muted-foreground mb-1 block">{t("شهر", "City")}</label><input value={addForm.city} onChange={e => setAddForm(p => ({ ...p, city: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm text-muted-foreground mb-1 block">{t("شهر", "City")}</label><input value={addForm.city} onChange={e => setAddForm(p => ({ ...p, city: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+              <div><label className="text-sm text-muted-foreground mb-1 block">{t("شماره تلفن", "Phone")} <span className="text-muted-foreground/60 text-xs">({t("اختیاری", "Optional")})</span></label><input value={addForm.phone} onChange={e => setAddForm(p => ({ ...p, phone: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" placeholder="09..." /></div>
+            </div>
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("ایمیل", "Email")} <span className="text-muted-foreground/60 text-xs">({t("اختیاری", "Optional")})</span></label><input type="email" value={addForm.email} onChange={e => setAddForm(p => ({ ...p, email: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("بیو", "Bio")} <span className="text-muted-foreground/60 text-xs">({t("اختیاری", "Optional")})</span></label><textarea value={addForm.bio} onChange={e => setAddForm(p => ({ ...p, bio: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50 h-16 resize-none" /></div>
             <Button className="w-full rounded-xl gold-gradient text-primary-foreground border-0" onClick={handleAdd}>{t("افزودن", "Add")}</Button>
           </div>
         </DialogContent>

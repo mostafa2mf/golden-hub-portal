@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, Pause, Edit, Plus, XCircle, Image as ImageIcon } from "lucide-react";
+import { Eye, Pause, Edit, Plus, XCircle, Image as ImageIcon, Upload } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,10 @@ const CampaignsPage = () => {
   const [detail, setDetail] = useState<any>(null);
   const [addModal, setAddModal] = useState(false);
   const [cancelModal, setCancelModal] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const statuses = ["active", "pending", "scheduled", "completed", "rejected"];
 
   const [addForm, setAddForm] = useState({ title: "", business_id: "", city: "", budget: "", description: "", start_date: "", end_date: "" });
@@ -46,11 +50,21 @@ const CampaignsPage = () => {
     setCancelModal(null);
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const handleAdd = async () => {
     if (!addForm.title.trim() || !addForm.business_id) {
       toast.error(t("عنوان و کسب‌وکار الزامی است", "Title and business are required"));
       return;
     }
+
     const { error } = await supabase.from("campaigns").insert({
       title: addForm.title,
       business_id: addForm.business_id,
@@ -66,6 +80,8 @@ const CampaignsPage = () => {
       toast.success(t("کمپین اضافه شد", "Campaign added"));
       setAddModal(false);
       setAddForm({ title: "", business_id: "", city: "", budget: "", description: "", start_date: "", end_date: "" });
+      setImagePreview(null);
+      setImageFile(null);
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
     }
   };
@@ -96,7 +112,6 @@ const CampaignsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {campaigns.filter((c: any) => c.status === s).map((camp: any) => (
                 <div key={camp.id} className="glass-card overflow-hidden hover-glow cursor-pointer transition-all hover:scale-[1.02] group" onClick={() => setDetail(camp)}>
-                  {/* Image header */}
                   <div className="h-36 bg-gradient-to-br from-primary/10 via-primary/5 to-card relative flex items-center justify-center">
                     {camp.businesses?.logo_url ? (
                       <img src={camp.businesses.logo_url} alt={camp.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
@@ -148,14 +163,18 @@ const CampaignsPage = () => {
           <DialogHeader><DialogTitle>{detail?.title}</DialogTitle></DialogHeader>
           {detail && (
             <div className="space-y-4">
-              {/* Detail image */}
               {detail.businesses?.logo_url && (
                 <div className="rounded-xl overflow-hidden h-40">
                   <img src={detail.businesses.logo_url} alt={detail.title} className="w-full h-full object-cover" />
                 </div>
               )}
               <div className="flex items-center gap-2"><StatusBadge status={detail.status} /><span className="text-sm text-muted-foreground">{detail.businesses?.name || "-"}</span></div>
-              {detail.description && <p className="text-sm text-foreground/80 bg-muted/20 rounded-xl p-3">{detail.description}</p>}
+              {detail.description && (
+                <div className="bg-muted/20 rounded-xl p-3">
+                  <span className="text-xs text-muted-foreground block mb-1">{t("توضیحات آفر", "Offer Description")}</span>
+                  <p className="text-sm text-foreground/80">{detail.description}</p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("دسته‌بندی", "Category")}</span><div className="font-medium mt-1">{detail.categories?.name_fa || detail.categories?.name || "-"}</div></div>
                 <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("شهر", "City")}</span><div className="font-medium mt-1">{detail.city || "-"}</div></div>
@@ -176,11 +195,29 @@ const CampaignsPage = () => {
 
       {/* Add Campaign Modal */}
       <Dialog open={addModal} onOpenChange={setAddModal}>
-        <DialogContent className="bg-card border-border/50 rounded-2xl max-w-md">
+        <DialogContent className="bg-card border-border/50 rounded-2xl max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{t("افزودن کمپین جدید", "Add New Campaign")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><label className="text-sm text-muted-foreground mb-1 block">{t("عنوان کمپین", "Campaign Title")}</label><input value={addForm.title} onChange={e => setAddForm(p => ({ ...p, title: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
-            <div><label className="text-sm text-muted-foreground mb-1 block">{t("کسب‌وکار", "Business")}</label>
+            {/* Image upload */}
+            <div>
+              <label className="text-sm text-muted-foreground mb-1 block">{t("تصویر کمپین", "Campaign Image")} <span className="text-muted-foreground/60 text-xs">({t("اختیاری", "Optional")})</span></label>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full h-32 rounded-xl border-2 border-dashed border-border/50 bg-muted/20 flex items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-all"
+              >
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-xl" />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Upload className="w-6 h-6" />
+                    <span className="text-xs">{t("آپلود تصویر", "Upload Image")}</span>
+                  </div>
+                )}
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+            </div>
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("عنوان کمپین", "Campaign Title")} *</label><input value={addForm.title} onChange={e => setAddForm(p => ({ ...p, title: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("کسب‌وکار", "Business")} *</label>
               <select value={addForm.business_id} onChange={e => setAddForm(p => ({ ...p, business_id: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50">
                 <option value="">{t("انتخاب کنید", "Select...")}</option>
                 {businesses.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -194,7 +231,7 @@ const CampaignsPage = () => {
               <div><label className="text-sm text-muted-foreground mb-1 block">{t("تاریخ شروع", "Start Date")}</label><input type="date" value={addForm.start_date} onChange={e => setAddForm(p => ({ ...p, start_date: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
               <div><label className="text-sm text-muted-foreground mb-1 block">{t("تاریخ پایان", "End Date")}</label><input type="date" value={addForm.end_date} onChange={e => setAddForm(p => ({ ...p, end_date: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
             </div>
-            <div><label className="text-sm text-muted-foreground mb-1 block">{t("توضیحات", "Description")}</label><textarea value={addForm.description} onChange={e => setAddForm(p => ({ ...p, description: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50 h-20 resize-none" /></div>
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("توضیحات آفر", "Offer Description")}</label><textarea value={addForm.description} onChange={e => setAddForm(p => ({ ...p, description: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50 h-20 resize-none" placeholder={t("آفری که می‌خواهید ارائه دهید...", "The offer you want to present...")} /></div>
             <Button className="w-full rounded-xl gold-gradient text-primary-foreground border-0" onClick={handleAdd}>{t("افزودن کمپین", "Add Campaign")}</Button>
           </div>
         </DialogContent>

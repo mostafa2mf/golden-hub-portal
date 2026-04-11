@@ -15,7 +15,7 @@ const menuItems = [
   { path: "/businesses", icon: Building2, labelFa: "کسب‌وکارها", labelEn: "Businesses" },
   { path: "/influencers", icon: Users, labelFa: "اینفلوئنسرها", labelEn: "Influencers" },
   { path: "/campaigns", icon: Megaphone, labelFa: "کمپین‌ها", labelEn: "Campaigns" },
-  { path: "/meetings", icon: CalendarDays, labelFa: "جلسات", labelEn: "Meetings" },
+  { path: "/meetings", icon: CalendarDays, labelFa: "دعوت‌ها", labelEn: "Invitations" },
   { path: "/messages", icon: MessageSquare, labelFa: "پیام‌ها", labelEn: "Messages" },
   { path: "/analytics", icon: BarChart3, labelFa: "تحلیل‌ها", labelEn: "Analytics" },
   { path: "/security", icon: Shield, labelFa: "امنیت و کارکنان", labelEn: "Security & Staff" },
