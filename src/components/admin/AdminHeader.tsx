@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
   Search, Bell, Plus, Globe, Menu, X, Clock,
-  UserPlus, Megaphone, ClipboardList, Send, Download, ChevronDown,
+  UserPlus, Megaphone, ClipboardList, Send, Download, ChevronDown, Moon, Sun,
   CheckCircle, MessageSquare, Calendar, AlertTriangle, User
 } from "lucide-react";
 import {
