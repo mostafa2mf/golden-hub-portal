@@ -9,6 +9,7 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Preview,
   Text,
 } from 'npm:@react-email/components@0.0.22'
@@ -18,26 +19,28 @@ interface RecoveryEmailProps {
   confirmationUrl: string
 }
 
+const LOGO_URL = 'https://iketcqfmrhdpgmbacxpy.supabase.co/storage/v1/object/public/logos/email-logo.png'
+
 export const RecoveryEmail = ({
   siteName,
   confirmationUrl,
 }: RecoveryEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="fa" dir="rtl">
     <Head />
-    <Preview>Reset your password for {siteName}</Preview>
+    <Preview>بازنشانی رمز عبور {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Reset your password</Heading>
+        <Img src={LOGO_URL} alt="Bloggerha" width="48" height="48" style={logo} />
+        <Heading style={h1}>بازنشانی رمز عبور</Heading>
         <Text style={text}>
-          We received a request to reset your password for {siteName}. Click
-          the button below to choose a new password.
+          درخواست بازنشانی رمز عبور برای حساب شما در {siteName} دریافت شد.
+          برای انتخاب رمز عبور جدید، روی دکمه زیر کلیک کنید.
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Reset Password
+          بازنشانی رمز عبور
         </Button>
         <Text style={footer}>
-          If you didn't request a password reset, you can safely ignore this
-          email. Your password will not be changed.
+          اگر این درخواست از طرف شما نبوده، این ایمیل را نادیده بگیرید. رمز عبور شما تغییر نخواهد کرد.
         </Text>
       </Container>
     </Body>
@@ -46,26 +49,10 @@ export const RecoveryEmail = ({
 
 export default RecoveryEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
-}
-const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
-}
-const button = {
-  backgroundColor: '#000000',
-  color: '#ffffff',
-  fontSize: '14px',
-  borderRadius: '8px',
-  padding: '12px 20px',
-  textDecoration: 'none',
-}
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Inter, Arial, sans-serif' }
+const container = { padding: '30px 25px', textAlign: 'center' as const }
+const logo = { margin: '0 auto 20px' }
+const h1 = { fontSize: '22px', fontWeight: 'bold' as const, color: '#1a1a2e', margin: '0 0 20px' }
+const text = { fontSize: '14px', color: '#6b7280', lineHeight: '1.7', margin: '0 0 25px' }
+const button = { backgroundColor: 'hsl(43, 80%, 55%)', color: '#1a1a2e', fontSize: '14px', fontWeight: 'bold' as const, borderRadius: '12px', padding: '12px 28px', textDecoration: 'none' }
+const footer = { fontSize: '12px', color: '#9ca3af', margin: '30px 0 0' }
