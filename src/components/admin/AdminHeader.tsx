@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   Search, Bell, Plus, Globe, Menu, X, Clock,
@@ -29,14 +30,13 @@ interface Notification {
   read: boolean;
 }
 
-const demoNotifications: Notification[] = [
-  { id: "1", type: "approval", title: "درخواست تأیید جدید", description: "سارا احمدی درخواست ثبت‌نام داده", time: "۲ دقیقه پیش", read: false },
-  { id: "2", type: "message", title: "پیام جدید", description: "رستوران گلها پیام جدیدی ارسال کرد", time: "۱۵ دقیقه پیش", read: false },
-  { id: "3", type: "meeting", title: "جلسه نزدیک است", description: "جلسه با کافه لمیز ساعت ۱۴:۰۰", time: "۳۰ دقیقه پیش", read: false },
-  { id: "4", type: "alert", title: "هشدار امنیتی", description: "ورود مشکوک از دستگاه ناشناس", time: "۱ ساعت پیش", read: true },
-  { id: "5", type: "user", title: "کاربر جدید", description: "علی رضایی به پلتفرم پیوست", time: "۲ ساعت پیش", read: true },
-  { id: "6", type: "approval", title: "بررسی کمپین", description: "کمپین تابستانه هتل پارسیان منتظر تأیید", time: "۳ ساعت پیش", read: true },
-];
+const typeFromActivityType = (type: string): Notification["type"] => {
+  if (type.includes("approval") || type.includes("approve") || type.includes("reject")) return "approval";
+  if (type.includes("message") || type.includes("chat")) return "message";
+  if (type.includes("meeting")) return "meeting";
+  if (type.includes("alert") || type.includes("security") || type.includes("login")) return "alert";
+  return "user";
+};
 
 const notificationIcons: Record<string, any> = {
   approval: CheckCircle, message: MessageSquare, meeting: Calendar, alert: AlertTriangle, user: User,
@@ -54,7 +54,7 @@ export const AdminHeader = ({ title, onMenuClick }: AdminHeaderProps) => {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState(demoNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentTime, setCurrentTime] = useState(new Date());
 
