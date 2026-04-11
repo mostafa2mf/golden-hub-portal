@@ -5,7 +5,8 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Grid3X3, List, Eye, Ban, MessageSquare, CheckCircle, Trash2, UserPlus, Image as ImageIcon } from "lucide-react";
+import { Search, Grid3X3, List, Eye, Ban, MessageSquare, CheckCircle, Trash2, UserPlus, Image as ImageIcon, Download } from "lucide-react";
+import { exportToCSV } from "@/utils/csvExport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -112,6 +113,12 @@ const InfluencersPage = () => {
             <button onClick={() => setViewMode("grid")} className={`p-2 rounded-lg transition-colors ${viewMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><Grid3X3 className="w-4 h-4" /></button>
             <button onClick={() => setViewMode("table")} className={`p-2 rounded-lg transition-colors ${viewMode === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><List className="w-4 h-4" /></button>
           </div>
+          <Button variant="outline" size="sm" className="gap-2 rounded-xl border-border/50" onClick={() => exportToCSV(filtered, "influencers", [
+            { key: "name", label: "Name" }, { key: "handle", label: "Handle" }, { key: "city", label: "City" },
+            { key: "followers", label: "Followers" }, { key: "status", label: "Status" }, { key: "verified", label: "Verified" },
+          ])}>
+            <Download className="w-4 h-4" />{t("خروجی CSV", "Export CSV")}
+          </Button>
           <Button onClick={() => setAddModal(true)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0">
             <UserPlus className="w-4 h-4" />{t("افزودن اینفلوئنسر", "Add Influencer")}
           </Button>
