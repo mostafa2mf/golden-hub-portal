@@ -688,6 +688,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_credentials: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["credential_entity_type"]
+          id: string
+          password: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["credential_entity_type"]
+          id?: string
+          password: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: Database["public"]["Enums"]["credential_entity_type"]
+          id?: string
+          password?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -755,6 +785,7 @@ export type Database = {
         | "completed"
         | "rejected"
         | "paused"
+      credential_entity_type: "blogger" | "business"
       entity_status: "pending" | "active" | "suspended" | "rejected"
       gender_type: "male" | "female" | "other"
       meeting_status: "pending" | "confirmed" | "cancelled" | "completed"
@@ -897,6 +928,7 @@ export const Constants = {
         "rejected",
         "paused",
       ],
+      credential_entity_type: ["blogger", "business"],
       entity_status: ["pending", "active", "suspended", "rejected"],
       gender_type: ["male", "female", "other"],
       meeting_status: ["pending", "confirmed", "cancelled", "completed"],
