@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { UserAuthProvider } from "@/contexts/UserAuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing.tsx";
 import Index from "./pages/Index.tsx";
@@ -20,6 +21,9 @@ import Settings from "./pages/Settings.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import Credentials from "./pages/Credentials.tsx";
+import UserLogin from "./pages/UserLogin.tsx";
+import BloggerDashboard from "./pages/BloggerDashboard.tsx";
+import BusinessDashboard from "./pages/BusinessDashboard.tsx";
 
 const queryClient = new QueryClient();
 
@@ -28,26 +32,31 @@ const App = () => (
     <TooltipProvider>
       <LanguageProvider>
         <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/approvals" element={<ProtectedRoute><Approvals /></ProtectedRoute>} />
-              <Route path="/businesses" element={<ProtectedRoute><Businesses /></ProtectedRoute>} />
-              <Route path="/influencers" element={<ProtectedRoute><Influencers /></ProtectedRoute>} />
-              <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
-              <Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
-              <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-              <Route path="/credentials" element={<ProtectedRoute><Credentials /></ProtectedRoute>} />
-              <Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          <UserAuthProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/login" element={<UserLogin />} />
+                <Route path="/blogger-dashboard" element={<BloggerDashboard />} />
+                <Route path="/business-dashboard" element={<BusinessDashboard />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                <Route path="/approvals" element={<ProtectedRoute><Approvals /></ProtectedRoute>} />
+                <Route path="/businesses" element={<ProtectedRoute><Businesses /></ProtectedRoute>} />
+                <Route path="/influencers" element={<ProtectedRoute><Influencers /></ProtectedRoute>} />
+                <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+                <Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
+                <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                <Route path="/credentials" element={<ProtectedRoute><Credentials /></ProtectedRoute>} />
+                <Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </UserAuthProvider>
         </AuthProvider>
       </LanguageProvider>
     </TooltipProvider>
