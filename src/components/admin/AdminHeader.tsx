@@ -63,6 +63,49 @@ export const AdminHeader = ({ title, onMenuClick }: AdminHeaderProps) => {
     return () => clearInterval(timer);
   }, []);
 
+  // Fetch real notifications from activity_log
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const { data } = await supabase
+        .from("activity_log")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (data) {
+        const mapped: Notification[] = data.map((log) => ({
+          id: log.id,
+          type: typeFromActivityType(log.type),
+          title: lang === "fa" ? (log.message_fa || log.message) : log.message,
+          description: "",
+          time: new Date(log.created_at).toLocaleString(lang === "fa" ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit", month: "short", day: "numeric" }),
+          read: false,
+        }));
+        setNotifications(mapped);
+      }
+    };
+    fetchNotifications();
+
+    // Real-time subscription
+    const channel = supabase
+      .channel("realtime-activity")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_log" }, (payload) => {
+        const log = payload.new as any;
+        const newNotif: Notification = {
+          id: log.id,
+          type: typeFromActivityType(log.type),
+          title: lang === "fa" ? (log.message_fa || log.message) : log.message,
+          description: "",
+          time: new Date(log.created_at).toLocaleString(lang === "fa" ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" }),
+          read: false,
+        };
+        setNotifications((prev) => [newNotif, ...prev].slice(0, 15));
+        toast.info(newNotif.title);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [lang]);
+
   const tehranTime = currentTime.toLocaleTimeString("fa-IR", { timeZone: "Asia/Tehran", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   const unreadCount = notifications.filter((n) => !n.read).length;
