@@ -20,7 +20,7 @@ const InfluencersPage = () => {
   const [detail, setDetail] = useState<any>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ type: string; id: string; name: string } | null>(null);
   const [addModal, setAddModal] = useState(false);
-  const [addForm, setAddForm] = useState({ name: "", handle: "", city: "", category: "Food", phone: "", email: "", bio: "" });
+  const [addForm, setAddForm] = useState({ name: "", handle: "", city: "", category: "Food", phone: "", email: "", bio: "", username: "", password: "", keyword: "" });
 
   const { data: influencers = [], isLoading } = useQuery({
     queryKey: ["influencers"],
@@ -56,20 +56,29 @@ const InfluencersPage = () => {
 
   const handleAdd = async () => {
     if (!addForm.name.trim()) { toast.error(t("نام الزامی است", "Name is required")); return; }
-    const { error } = await supabase.from("influencers").insert({
+    const { data: inserted, error } = await supabase.from("influencers").insert({
       name: addForm.name,
       handle: addForm.handle || null,
       city: addForm.city || null,
       bio: addForm.bio || null,
       status: "pending",
-    });
-    if (error) toast.error(error.message);
-    else {
-      toast.success(t("اینفلوئنسر اضافه شد", "Influencer added"));
-      setAddModal(false);
-      setAddForm({ name: "", handle: "", city: "", category: "Food", phone: "", email: "", bio: "" });
-      queryClient.invalidateQueries({ queryKey: ["influencers"] });
+    }).select().single();
+    if (error) { toast.error(error.message); return; }
+    // Save credentials if username provided
+    if (addForm.username.trim() && addForm.password.trim() && inserted) {
+      await supabase.from("user_credentials").insert({
+        entity_type: "blogger" as any,
+        entity_id: inserted.id,
+        username: addForm.username.trim(),
+        password: addForm.password.trim(),
+        keyword: addForm.keyword.trim() || null,
+      });
     }
+    toast.success(t("اینفلوئنسر اضافه شد", "Influencer added"));
+    setAddModal(false);
+    setAddForm({ name: "", handle: "", city: "", category: "Food", phone: "", email: "", bio: "", username: "", password: "", keyword: "" });
+    queryClient.invalidateQueries({ queryKey: ["influencers"] });
+    queryClient.invalidateQueries({ queryKey: ["user-credentials"] });
   };
 
   const handleVerify = async (inf: any) => {
@@ -232,6 +241,14 @@ const InfluencersPage = () => {
             </div>
             <div><label className="text-sm text-muted-foreground mb-1 block">{t("ایمیل", "Email")} <span className="text-muted-foreground/60 text-xs">({t("اختیاری", "Optional")})</span></label><input type="email" value={addForm.email} onChange={e => setAddForm(p => ({ ...p, email: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
             <div><label className="text-sm text-muted-foreground mb-1 block">{t("بیو", "Bio")} <span className="text-muted-foreground/60 text-xs">({t("اختیاری", "Optional")})</span></label><textarea value={addForm.bio} onChange={e => setAddForm(p => ({ ...p, bio: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50 h-16 resize-none" /></div>
+            <div className="border-t border-border/30 pt-4 mt-2">
+              <p className="text-xs font-semibold text-primary mb-3">{t("اطلاعات ورود (اختیاری)", "Login Credentials (Optional)")}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="text-sm text-muted-foreground mb-1 block">{t("نام کاربری", "Username")}</label><input value={addForm.username} onChange={e => setAddForm(p => ({ ...p, username: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" dir="ltr" /></div>
+                <div><label className="text-sm text-muted-foreground mb-1 block">{t("رمز عبور", "Password")}</label><input value={addForm.password} onChange={e => setAddForm(p => ({ ...p, password: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" dir="ltr" /></div>
+              </div>
+              <div className="mt-3"><label className="text-sm text-muted-foreground mb-1 block">{t("کلمه کلیدی", "Keyword")} <span className="text-muted-foreground/60 text-xs">({t("برای بازیابی رمز", "For password recovery")})</span></label><input value={addForm.keyword} onChange={e => setAddForm(p => ({ ...p, keyword: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            </div>
             <Button className="w-full rounded-xl gold-gradient text-primary-foreground border-0" onClick={handleAdd}>{t("افزودن", "Add")}</Button>
           </div>
         </DialogContent>

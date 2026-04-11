@@ -158,6 +158,9 @@ const Credentials = () => {
                     {t("رمز عبور", "Password")}
                   </th>
                   <th className="text-start px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {t("کلمه کلیدی", "Keyword")}
+                  </th>
+                  <th className="text-start px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     {t("عملیات", "Actions")}
                   </th>
                 </tr>
@@ -168,6 +171,7 @@ const Credentials = () => {
                     <tr key={i} className="border-b border-border/10">
                       <td className="px-5 py-4"><div className="h-4 w-32 bg-muted/50 rounded animate-pulse" /></td>
                       <td className="px-5 py-4"><div className="h-4 w-24 bg-muted/50 rounded animate-pulse" /></td>
+                      <td className="px-5 py-4"><div className="h-4 w-20 bg-muted/50 rounded animate-pulse" /></td>
                       <td className="px-5 py-4"><div className="h-4 w-20 bg-muted/50 rounded animate-pulse" /></td>
                       <td className="px-5 py-4"><div className="h-4 w-16 bg-muted/50 rounded animate-pulse" /></td>
                     </tr>
@@ -204,6 +208,9 @@ const Credentials = () => {
                         </div>
                       </td>
                       <td className="px-5 py-4">
+                        <span className="text-sm text-foreground">{cred.keyword || <span className="text-muted-foreground">—</span>}</span>
+                      </td>
+                      <td className="px-5 py-4">
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => copyToClipboard(cred.username, t("یوزرنیم", "Username"))}
@@ -225,7 +232,7 @@ const Credentials = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="px-5 py-12 text-center">
+                    <td colSpan={5} className="px-5 py-12 text-center">
                       <p className="text-sm text-muted-foreground">
                         {t("هنوز اطلاعاتی ثبت نشده", "No credentials found")}
                       </p>
