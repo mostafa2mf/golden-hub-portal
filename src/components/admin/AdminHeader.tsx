@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   Search, Bell, Plus, Globe, Menu, X, Clock,
-  UserPlus, Megaphone, ClipboardList, Send, Download, ChevronDown,
+  UserPlus, Megaphone, ClipboardList, Send, Download, ChevronDown, Moon, Sun,
   CheckCircle, MessageSquare, Calendar, AlertTriangle, User
 } from "lucide-react";
 import {
@@ -28,14 +30,13 @@ interface Notification {
   read: boolean;
 }
 
-const demoNotifications: Notification[] = [
-  { id: "1", type: "approval", title: "درخواست تأیید جدید", description: "سارا احمدی درخواست ثبت‌نام داده", time: "۲ دقیقه پیش", read: false },
-  { id: "2", type: "message", title: "پیام جدید", description: "رستوران گلها پیام جدیدی ارسال کرد", time: "۱۵ دقیقه پیش", read: false },
-  { id: "3", type: "meeting", title: "جلسه نزدیک است", description: "جلسه با کافه لمیز ساعت ۱۴:۰۰", time: "۳۰ دقیقه پیش", read: false },
-  { id: "4", type: "alert", title: "هشدار امنیتی", description: "ورود مشکوک از دستگاه ناشناس", time: "۱ ساعت پیش", read: true },
-  { id: "5", type: "user", title: "کاربر جدید", description: "علی رضایی به پلتفرم پیوست", time: "۲ ساعت پیش", read: true },
-  { id: "6", type: "approval", title: "بررسی کمپین", description: "کمپین تابستانه هتل پارسیان منتظر تأیید", time: "۳ ساعت پیش", read: true },
-];
+const typeFromActivityType = (type: string): Notification["type"] => {
+  if (type.includes("approval") || type.includes("approve") || type.includes("reject")) return "approval";
+  if (type.includes("message") || type.includes("chat")) return "message";
+  if (type.includes("meeting")) return "meeting";
+  if (type.includes("alert") || type.includes("security") || type.includes("login")) return "alert";
+  return "user";
+};
 
 const notificationIcons: Record<string, any> = {
   approval: CheckCircle, message: MessageSquare, meeting: Calendar, alert: AlertTriangle, user: User,
@@ -53,7 +54,7 @@ export const AdminHeader = ({ title, onMenuClick }: AdminHeaderProps) => {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState(demoNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -61,6 +62,49 @@ export const AdminHeader = ({ title, onMenuClick }: AdminHeaderProps) => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Fetch real notifications from activity_log
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const { data } = await supabase
+        .from("activity_log")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (data) {
+        const mapped: Notification[] = data.map((log) => ({
+          id: log.id,
+          type: typeFromActivityType(log.type),
+          title: lang === "fa" ? (log.message_fa || log.message) : log.message,
+          description: "",
+          time: new Date(log.created_at).toLocaleString(lang === "fa" ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit", month: "short", day: "numeric" }),
+          read: false,
+        }));
+        setNotifications(mapped);
+      }
+    };
+    fetchNotifications();
+
+    // Real-time subscription
+    const channel = supabase
+      .channel("realtime-activity")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_log" }, (payload) => {
+        const log = payload.new as any;
+        const newNotif: Notification = {
+          id: log.id,
+          type: typeFromActivityType(log.type),
+          title: lang === "fa" ? (log.message_fa || log.message) : log.message,
+          description: "",
+          time: new Date(log.created_at).toLocaleString(lang === "fa" ? "fa-IR" : "en-US", { hour: "2-digit", minute: "2-digit" }),
+          read: false,
+        };
+        setNotifications((prev) => [newNotif, ...prev].slice(0, 15));
+        toast.info(newNotif.title);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [lang]);
 
   const tehranTime = currentTime.toLocaleTimeString("fa-IR", { timeZone: "Asia/Tehran", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
@@ -185,6 +229,9 @@ export const AdminHeader = ({ title, onMenuClick }: AdminHeaderProps) => {
             <DropdownMenuItem className="gap-2 cursor-pointer rounded-lg" onClick={() => toast.success(t("خروجی در حال آماده‌سازی...", "Exporting data..."))}><Download className="w-4 h-4 text-primary" />{t("خروجی داده", "Export Data")}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Theme Toggle */}
+        <ThemeToggle />
 
         {/* Language */}
         <button onClick={() => setLang(lang === "fa" ? "en" : "fa")} className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-muted transition-colors text-sm font-medium text-muted-foreground">

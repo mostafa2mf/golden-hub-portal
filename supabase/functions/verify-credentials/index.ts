@@ -6,6 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+const MAX_ATTEMPTS = 5;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -25,20 +28,56 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    const trimmedUsername = username.trim();
+
+    // Rate limiting check
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_SECONDS * 1000).toISOString();
+    const { count } = await supabase
+      .from("login_attempts")
+      .select("*", { count: "exact", head: true })
+      .eq("username", trimmedUsername)
+      .eq("success", false)
+      .gte("attempted_at", windowStart);
+
+    if ((count ?? 0) >= MAX_ATTEMPTS) {
+      return new Response(
+        JSON.stringify({ error: "RATE_LIMITED", retry_after: RATE_LIMIT_WINDOW_SECONDS }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Look up credentials
     const { data: cred, error } = await supabase
       .from("user_credentials")
       .select("*")
-      .eq("username", username.trim())
-      .eq("password", password)
+      .eq("username", trimmedUsername)
       .maybeSingle();
 
     if (error || !cred) {
+      // Log failed attempt
+      await supabase.from("login_attempts").insert({ username: trimmedUsername, success: false });
       return new Response(
         JSON.stringify({ error: "INVALID_CREDENTIALS" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Verify password using pgcrypto crypt()
+    const { data: matchResult } = await supabase.rpc("verify_password", {
+      _stored_hash: cred.password,
+      _input_password: password,
+    });
+
+    if (!matchResult) {
+      await supabase.from("login_attempts").insert({ username: trimmedUsername, success: false });
+      return new Response(
+        JSON.stringify({ error: "INVALID_CREDENTIALS" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Log successful attempt
+    await supabase.from("login_attempts").insert({ username: trimmedUsername, success: true });
 
     // Fetch entity details
     let entity: { name: string; avatar_url?: string | null } | null = null;
@@ -66,7 +105,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate a simple session token (timestamp + entity_id hash)
     const sessionToken = btoa(
       JSON.stringify({
         entity_id: cred.entity_id,

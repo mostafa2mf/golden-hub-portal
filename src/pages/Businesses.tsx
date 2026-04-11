@@ -5,7 +5,8 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Eye, Edit, Ban, MessageSquare, CheckCircle, Star, Plus, Image as ImageIcon } from "lucide-react";
+import { Search, Eye, Edit, Ban, MessageSquare, CheckCircle, Star, Plus, Image as ImageIcon, Download } from "lucide-react";
+import { exportToCSV } from "@/utils/csvExport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -70,6 +71,12 @@ const BusinessesPage = () => {
             <Search className="w-4 h-4 text-muted-foreground mx-3" />
             <input placeholder={t("جستجو...", "Search...")} value={search} onChange={e => setSearch(e.target.value)} className="bg-transparent border-none outline-none text-sm py-2.5 pe-3 w-full" />
           </div>
+          <Button variant="outline" size="sm" className="gap-2 rounded-xl border-border/50" onClick={() => exportToCSV(filtered, "businesses", [
+            { key: "name", label: "Name" }, { key: "city", label: "City" }, { key: "email", label: "Email" },
+            { key: "phone", label: "Phone" }, { key: "status", label: "Status" }, { key: "rating", label: "Rating" },
+          ])}>
+            <Download className="w-4 h-4" />{t("خروجی CSV", "Export CSV")}
+          </Button>
           <Button onClick={() => setAddModal(true)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0">
             <Plus className="w-4 h-4" />{t("افزودن کسب‌وکار", "Add Business")}
           </Button>

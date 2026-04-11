@@ -50,6 +50,9 @@ export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await res.json();
 
       if (!res.ok) {
+        if (res.status === 429) {
+          return { error: "RATE_LIMITED" };
+        }
         return { error: data.error ?? "LOGIN_FAILED" };
       }
 

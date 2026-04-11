@@ -5,7 +5,8 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, Pause, Edit, Plus, XCircle, Image as ImageIcon, Upload } from "lucide-react";
+import { Eye, Pause, Edit, Plus, XCircle, Image as ImageIcon, Upload, Download } from "lucide-react";
+import { exportToCSV } from "@/utils/csvExport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -92,9 +93,17 @@ const CampaignsPage = () => {
     <AdminLayout title={t("کمپین‌ها", "Campaigns")}>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-base font-semibold">{t("مدیریت کمپین‌ها", "Campaign Management")}</h2>
-        <Button onClick={() => setAddModal(true)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0">
-          <Plus className="w-4 h-4" />{t("افزودن کمپین", "Add Campaign")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="gap-2 rounded-xl border-border/50" onClick={() => exportToCSV(campaigns, "campaigns", [
+            { key: "title", label: "Title" }, { key: "status", label: "Status" }, { key: "budget", label: "Budget" },
+            { key: "city", label: "City" }, { key: "start_date", label: "Start" }, { key: "end_date", label: "End" },
+          ])}>
+            <Download className="w-4 h-4" />{t("خروجی CSV", "Export CSV")}
+          </Button>
+          <Button onClick={() => setAddModal(true)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0">
+            <Plus className="w-4 h-4" />{t("افزودن کمپین", "Add Campaign")}
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="active" className="space-y-4">
