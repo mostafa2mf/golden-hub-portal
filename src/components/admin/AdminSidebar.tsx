@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, CheckCircle, Building2, Users, Megaphone,
   CalendarDays, MessageSquare, BarChart3, Shield, Settings,
-  LogOut, ChevronLeft, ChevronRight
+  LogOut, ChevronLeft, ChevronRight, KeyRound
 } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
@@ -18,6 +18,7 @@ const menuItems = [
   { path: "/meetings", icon: CalendarDays, labelFa: "دعوت‌ها", labelEn: "Invitations" },
   { path: "/messages", icon: MessageSquare, labelFa: "پیام‌ها", labelEn: "Messages" },
   { path: "/analytics", icon: BarChart3, labelFa: "تحلیل‌ها", labelEn: "Analytics" },
+  { path: "/credentials", icon: KeyRound, labelFa: "نام کاربری و رمزها", labelEn: "Credentials" },
   { path: "/security", icon: Shield, labelFa: "امنیت و کارکنان", labelEn: "Security & Staff" },
   { path: "/settings", icon: Settings, labelFa: "تنظیمات", labelEn: "Settings" },
 ];
