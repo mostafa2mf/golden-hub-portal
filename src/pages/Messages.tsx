@@ -7,16 +7,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Search, Pin, Send, Image, Paperclip, Archive, Flag, CheckCheck, MessageSquare, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Switch } from "@/components/ui/switch";
+
+type RoleFilter = "all" | "influencer" | "business";
 
 const MessagesPage = () => {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [message, setMessage] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [showInfluencers, setShowInfluencers] = useState(true);
-  const [showBusinesses, setShowBusinesses] = useState(true);
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
 
   const { data: conversations = [] } = useQuery({
     queryKey: ["conversations"],
@@ -50,11 +49,8 @@ const MessagesPage = () => {
   };
 
   const filteredConversations = conversations.filter((m: any) => {
-    if (filter === "unread") return m.unread_count > 0;
-    if (filter === "pinned") return m.is_pinned;
-    // Role filter
-    if (!showInfluencers && m.participant_role === "influencer") return false;
-    if (!showBusinesses && m.participant_role === "business") return false;
+    if (roleFilter === "influencer") return m.participant_role === "influencer";
+    if (roleFilter === "business") return m.participant_role === "business";
     return true;
   });
 
@@ -69,25 +65,25 @@ const MessagesPage = () => {
                 <Search className="w-4 h-4 text-muted-foreground mx-3" />
                 <input placeholder={t("جستجو...", "Search...")} className="bg-transparent border-none outline-none text-sm py-2.5 pe-3 w-full text-foreground placeholder:text-muted-foreground" />
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1 flex-1">
-                  {["all", "unread", "pinned"].map(f => (
-                    <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${filter === f ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"}`}>
-                      {t({ all: "همه", unread: "خوانده نشده", pinned: "سنجاق شده" }[f]!, { all: "All", unread: "Unread", pinned: "Pinned" }[f]!)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {/* Role switchers */}
-              <div className="flex items-center gap-4 text-xs">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <Switch checked={showInfluencers} onCheckedChange={setShowInfluencers} className="scale-75" />
-                  <span className={showInfluencers ? "text-foreground" : "text-muted-foreground"}>{t("بلاگرها", "Bloggers")}</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <Switch checked={showBusinesses} onCheckedChange={setShowBusinesses} className="scale-75" />
-                  <span className={showBusinesses ? "text-foreground" : "text-muted-foreground"}>{t("کسب‌وکارها", "Businesses")}</span>
-                </label>
+              {/* Single switcher: همه | بلاگرها | کسب‌وکارها */}
+              <div className="flex gap-1 bg-muted/30 rounded-xl p-0.5">
+                {([
+                  { key: "all", fa: "همه", en: "All" },
+                  { key: "influencer", fa: "بلاگرها", en: "Bloggers" },
+                  { key: "business", fa: "کسب‌وکارها", en: "Businesses" },
+                ] as const).map(f => (
+                  <button
+                    key={f.key}
+                    onClick={() => setRoleFilter(f.key)}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      roleFilter === f.key
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                    }`}
+                  >
+                    {t(f.fa, f.en)}
+                  </button>
+                ))}
               </div>
             </div>
             <div className="flex-1 overflow-y-auto scrollbar-thin">
@@ -123,7 +119,6 @@ const MessagesPage = () => {
           <div className={cn("flex-1 flex flex-col", !selectedChat && "hidden md:flex")}>
             {selected ? (
               <>
-                {/* Chat header */}
                 <div className="flex items-center justify-between p-4 border-b border-border/30 bg-card/30 backdrop-blur-sm">
                   <div className="flex items-center gap-3">
                     <button onClick={() => setSelectedChat(null)} className="md:hidden p-2 rounded-xl hover:bg-muted/30 transition-colors">
@@ -147,7 +142,6 @@ const MessagesPage = () => {
                   </div>
                 </div>
 
-                {/* Messages area */}
                 <div className="flex-1 overflow-y-auto p-5 space-y-3 scrollbar-thin bg-gradient-to-b from-transparent to-card/20">
                   <div className="text-center"><span className="text-xs text-muted-foreground/60 bg-muted/20 px-3 py-1 rounded-full">{t("شروع مکالمه", "Conversation start")}</span></div>
                   {chatMessages.map((msg: any) => (
@@ -164,7 +158,6 @@ const MessagesPage = () => {
                   {chatMessages.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">{t("پیامی وجود ندارد", "No messages yet")}</p>}
                 </div>
 
-                {/* Input area */}
                 <div className="p-4 border-t border-border/30 bg-card/30 backdrop-blur-sm">
                   <div className="flex items-center gap-2">
                     <button className="p-2.5 rounded-xl hover:bg-muted/30 transition-colors"><Paperclip className="w-4 h-4 text-muted-foreground" /></button>

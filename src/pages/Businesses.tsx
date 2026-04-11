@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Eye, Edit, Ban, MessageSquare, CheckCircle, Star, Plus } from "lucide-react";
+import { Search, Eye, Edit, Ban, MessageSquare, CheckCircle, Star, Plus, Image as ImageIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ const BusinessesPage = () => {
   const [detail, setDetail] = useState<any>(null);
   const [addModal, setAddModal] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ type: string; id: string; name: string } | null>(null);
-  const [addForm, setAddForm] = useState({ name: "", category: "Cafe", city: "", contact: "", phone: "" });
+  const [addForm, setAddForm] = useState({ name: "", category: "Cafe", city: "", contact: "", phone: "", email: "", description: "" });
 
   const { data: businesses = [], isLoading } = useQuery({
     queryKey: ["businesses"],
@@ -33,9 +33,22 @@ const BusinessesPage = () => {
 
   const handleAdd = async () => {
     if (!addForm.name.trim()) { toast.error(t("نام الزامی است", "Name is required")); return; }
-    const { error } = await supabase.from("businesses").insert({ name: addForm.name, city: addForm.city, contact_name: addForm.contact, phone: addForm.phone, status: "pending" });
+    const { error } = await supabase.from("businesses").insert({
+      name: addForm.name,
+      city: addForm.city || null,
+      contact_name: addForm.contact || null,
+      phone: addForm.phone || null,
+      email: addForm.email || null,
+      description: addForm.description || null,
+      status: "pending",
+    });
     if (error) toast.error(error.message);
-    else { toast.success(t("کسب‌وکار اضافه شد", "Business added")); setAddModal(false); setAddForm({ name: "", category: "Cafe", city: "", contact: "", phone: "" }); queryClient.invalidateQueries({ queryKey: ["businesses"] }); }
+    else {
+      toast.success(t("کسب‌وکار اضافه شد", "Business added"));
+      setAddModal(false);
+      setAddForm({ name: "", category: "Cafe", city: "", contact: "", phone: "", email: "", description: "" });
+      queryClient.invalidateQueries({ queryKey: ["businesses"] });
+    }
   };
 
   if (isLoading) return <AdminLayout title={t("کسب‌وکارها", "Businesses")}><div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div></AdminLayout>;
@@ -58,20 +71,28 @@ const BusinessesPage = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((biz: any) => (
-          <div key={biz.id} className="glass-card p-5 hover-glow cursor-pointer transition-all hover:scale-[1.02]" onClick={() => setDetail(biz)}>
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">{biz.name.charAt(0)}</div>
-              <div className="flex items-center gap-1">
+          <div key={biz.id} className="glass-card overflow-hidden hover-glow cursor-pointer transition-all hover:scale-[1.02] group" onClick={() => setDetail(biz)}>
+            {/* Image header */}
+            <div className="h-32 bg-gradient-to-br from-primary/10 via-primary/5 to-card relative flex items-center justify-center">
+              {biz.logo_url ? (
+                <img src={biz.logo_url} alt={biz.name} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity" />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">{biz.name.charAt(0)}</div>
+              )}
+              <div className="absolute top-2 end-2 flex items-center gap-1">
                 {biz.verified && <CheckCircle className="w-4 h-4 text-primary" />}
                 <StatusBadge status={biz.status} />
               </div>
+              <div className="absolute bottom-0 inset-x-0 h-10 bg-gradient-to-t from-card to-transparent" />
             </div>
-            <h3 className="font-semibold mb-0.5">{biz.name}</h3>
-            <p className="text-xs text-muted-foreground mb-3">{biz.categories?.name_fa || biz.categories?.name || "-"} • {biz.city || "-"}</p>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="p-2 rounded-lg bg-muted/30"><div className="text-sm font-bold">{biz.active_campaigns}</div><div className="text-[10px] text-muted-foreground">{t("کمپین", "Campaigns")}</div></div>
-              <div className="p-2 rounded-lg bg-muted/30"><div className="text-sm font-bold">{biz.completed_collabs}</div><div className="text-[10px] text-muted-foreground">{t("همکاری", "Collabs")}</div></div>
-              <div className="p-2 rounded-lg bg-muted/30"><div className="text-sm font-bold flex items-center justify-center gap-0.5"><Star className="w-3 h-3 text-primary" />{biz.rating || 0}</div><div className="text-[10px] text-muted-foreground">{t("امتیاز", "Rating")}</div></div>
+            <div className="p-4">
+              <h3 className="font-semibold mb-0.5">{biz.name}</h3>
+              <p className="text-xs text-muted-foreground mb-3">{biz.categories?.name_fa || biz.categories?.name || "-"} • {biz.city || "-"}</p>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2 rounded-lg bg-muted/30"><div className="text-sm font-bold">{biz.active_campaigns}</div><div className="text-[10px] text-muted-foreground">{t("کمپین", "Campaigns")}</div></div>
+                <div className="p-2 rounded-lg bg-muted/30"><div className="text-sm font-bold">{biz.completed_collabs}</div><div className="text-[10px] text-muted-foreground">{t("همکاری", "Collabs")}</div></div>
+                <div className="p-2 rounded-lg bg-muted/30"><div className="text-sm font-bold flex items-center justify-center gap-0.5"><Star className="w-3 h-3 text-primary" />{biz.rating || 0}</div><div className="text-[10px] text-muted-foreground">{t("امتیاز", "Rating")}</div></div>
+              </div>
             </div>
           </div>
         ))}
@@ -84,7 +105,11 @@ const BusinessesPage = () => {
           {detail && (
             <div className="space-y-5">
               <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-3xl">{detail.name.charAt(0)}</div>
+                {detail.logo_url ? (
+                  <img src={detail.logo_url} alt={detail.name} className="w-20 h-20 rounded-2xl object-cover" />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-3xl">{detail.name.charAt(0)}</div>
+                )}
                 <div>
                   <div className="flex items-center gap-2"><h2 className="text-xl font-bold">{detail.name}</h2>{detail.verified && <CheckCircle className="w-5 h-5 text-primary" />}</div>
                   <p className="text-sm text-muted-foreground">{detail.categories?.name_fa || detail.categories?.name || "-"} • {detail.city || "-"}</p>
@@ -94,6 +119,8 @@ const BusinessesPage = () => {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("آدرس", "Address")}</span><div className="font-medium mt-1">{detail.address || "-"}</div></div>
                 <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("تماس", "Contact")}</span><div className="font-medium mt-1">{detail.contact_name || "-"}</div></div>
+                <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("تلفن", "Phone")}</span><div className="font-medium mt-1">{detail.phone || "-"}</div></div>
+                <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("ایمیل", "Email")}</span><div className="font-medium mt-1">{detail.email || "-"}</div></div>
                 <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("کمپین فعال", "Active Campaigns")}</span><div className="font-medium mt-1">{detail.active_campaigns}</div></div>
                 <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("همکاری تکمیل‌شده", "Completed")}</span><div className="font-medium mt-1">{detail.completed_collabs}</div></div>
               </div>
@@ -113,10 +140,16 @@ const BusinessesPage = () => {
         <DialogContent className="bg-card border-border/50 rounded-2xl">
           <DialogHeader><DialogTitle>{t("افزودن کسب‌وکار", "Add Business")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><label className="text-sm text-muted-foreground mb-1 block">{t("نام کسب‌وکار", "Business Name")}</label><input value={addForm.name} onChange={e => setAddForm(p => ({ ...p, name: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
-            <div><label className="text-sm text-muted-foreground mb-1 block">{t("شهر", "City")}</label><input value={addForm.city} onChange={e => setAddForm(p => ({ ...p, city: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
-            <div><label className="text-sm text-muted-foreground mb-1 block">{t("شخص تماس", "Contact Person")}</label><input value={addForm.contact} onChange={e => setAddForm(p => ({ ...p, contact: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
-            <div><label className="text-sm text-muted-foreground mb-1 block">{t("تلفن", "Phone")}</label><input value={addForm.phone} onChange={e => setAddForm(p => ({ ...p, phone: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("نام کسب‌وکار", "Business Name")} *</label><input value={addForm.name} onChange={e => setAddForm(p => ({ ...p, name: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm text-muted-foreground mb-1 block">{t("شهر", "City")}</label><input value={addForm.city} onChange={e => setAddForm(p => ({ ...p, city: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+              <div><label className="text-sm text-muted-foreground mb-1 block">{t("شخص تماس", "Contact Person")}</label><input value={addForm.contact} onChange={e => setAddForm(p => ({ ...p, contact: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm text-muted-foreground mb-1 block">{t("تلفن", "Phone")} <span className="text-muted-foreground/60 text-xs">({t("اختیاری", "Optional")})</span></label><input value={addForm.phone} onChange={e => setAddForm(p => ({ ...p, phone: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+              <div><label className="text-sm text-muted-foreground mb-1 block">{t("ایمیل", "Email")} <span className="text-muted-foreground/60 text-xs">({t("اختیاری", "Optional")})</span></label><input type="email" value={addForm.email} onChange={e => setAddForm(p => ({ ...p, email: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" /></div>
+            </div>
+            <div><label className="text-sm text-muted-foreground mb-1 block">{t("توضیحات آفر", "Offer Description")} <span className="text-muted-foreground/60 text-xs">({t("اختیاری", "Optional")})</span></label><textarea value={addForm.description} onChange={e => setAddForm(p => ({ ...p, description: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50 h-20 resize-none" placeholder={t("آفری که می‌خواهید ارائه دهید...", "The offer you want to present...")} /></div>
             <Button className="w-full rounded-xl gold-gradient text-primary-foreground border-0" onClick={handleAdd}>{t("افزودن", "Add")}</Button>
           </div>
         </DialogContent>
