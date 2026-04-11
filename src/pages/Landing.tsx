@@ -1,10 +1,12 @@
-import { lazy, Suspense, useState, useEffect } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Globe, Mail, Lock, Loader2 } from "lucide-react";
+import { Globe } from "lucide-react";
 import { toast } from "sonner";
+import { AdminAuthCard } from "@/components/auth/AdminAuthCard";
+import { LandingHero } from "@/components/auth/LandingHero";
 import logoImg from "@/assets/logo.png";
 
 const LandingBackground3D = lazy(() => import("@/components/LandingBackground3D"));
@@ -16,12 +18,61 @@ const Landing = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
-  const [showForgot, setShowForgot] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "forgot">("login");
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
 
-  // If already logged in as admin, redirect
+  const heroHighlights = useMemo(
+    () => [
+      t("ورود مستقیم و بدون مرحله‌ی اضافی برای ادمین", "Direct admin sign-in with no extra step"),
+      t("بررسی دسترسی ادمین قبل از ورود به داشبورد", "Admin access is verified before entering the dashboard"),
+      t("بازنشانی رمز عبور از همین صفحه و بدون سردرگمی", "Password recovery is available right on this page"),
+      t("تجربه‌ی ساده‌تر، سریع‌تر و واضح‌تر برای مدیریت", "A simpler, faster, clearer management experience"),
+    ],
+    [t],
+  );
+
+  const heroStats = useMemo(
+    () => [
+      { label: t("ورود", "Access"), value: t("امن", "Secure") },
+      { label: t("نقش", "Role"), value: "Admin" },
+      { label: t("وضعیت", "Status"), value: t("آنلاین", "Online") },
+    ],
+    [t],
+  );
+
+  const authCopy = useMemo(
+    () => ({
+      adminOnly: t("فقط ادمین", "Admin only"),
+      secureAccess: t("ورود امن با ایمیل و رمز عبور", "Secure access with email and password"),
+      loginTitle: t("ورود به پنل مدیریت", "Sign in to the admin panel"),
+      loginDescription: t(
+        "برای ورود، ایمیل و رمز عبور ادمین را وارد کنید. دسترسی شما قبل از ورود به داشبورد بررسی می‌شود.",
+        "Enter the admin email and password. Your access is verified before the dashboard opens.",
+      ),
+      forgotTitle: t("بازیابی رمز عبور", "Recover your password"),
+      forgotDescription: t(
+        "ایمیل ادمین را وارد کنید تا لینک بازنشانی رمز عبور برایتان ارسال شود.",
+        "Enter the admin email to receive a password reset link.",
+      ),
+      emailLabel: t("ایمیل", "Email"),
+      passwordLabel: t("رمز عبور", "Password"),
+      emailPlaceholder: t("ایمیل ادمین", "Admin email"),
+      passwordPlaceholder: t("رمز عبور ادمین", "Admin password"),
+      forgotPlaceholder: t("example@domain.com", "example@domain.com"),
+      loginAction: t("ورود به داشبورد", "Enter dashboard"),
+      forgotAction: t("ارسال لینک بازنشانی", "Send reset link"),
+      switchToForgot: t("رمز را فراموش کرده‌ام", "Forgot password?"),
+      switchToLogin: t("بازگشت به ورود", "Back to sign in"),
+      helpText: t(
+        "اگر این حساب نقش ادمین نداشته باشد، ورود انجام نمی‌شود و همان‌جا متوقف خواهد شد.",
+        "If this account does not have the admin role, sign-in will stop before dashboard access.",
+      ),
+      checkingSession: t("در حال بررسی نشست...", "Checking session..."),
+    }),
+    [t],
+  );
+
   useEffect(() => {
     if (!authLoading && user && isAdmin) {
       navigate("/dashboard", { replace: true });
@@ -35,14 +86,23 @@ const Landing = () => {
       return;
     }
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const { error, isAdmin: hasAdminAccess } = await signIn(email, password);
     setLoading(false);
+
     if (error) {
+      if (error === "ADMIN_ONLY") {
+        toast.error(t("این حساب دسترسی ادمین ندارد", "This account does not have admin access"));
+        return;
+      }
+
       toast.error(t("ایمیل یا رمز عبور اشتباه است", "Invalid email or password"));
-    } else {
-      toast.success(t("خوش آمدید!", "Welcome!"));
-      navigate("/dashboard");
+      return;
     }
+
+    if (!hasAdminAccess) return;
+
+    toast.success(t("خوش آمدید!", "Welcome!"));
+    navigate("/dashboard", { replace: true });
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -56,151 +116,70 @@ const Landing = () => {
       redirectTo: window.location.origin + "/reset-password",
     });
     setForgotLoading(false);
+
     if (error) {
       toast.error(t("خطا در ارسال ایمیل", "Error sending reset email"));
     } else {
       toast.success(t("لینک بازنشانی به ایمیل شما ارسال شد", "Reset link sent to your email"));
-      setShowForgot(false);
+      setAuthMode("login");
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden bg-background">
       <Suspense fallback={null}>
         <LandingBackground3D />
       </Suspense>
 
+      <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/70 to-background" />
+
       <button
         onClick={() => setLang(lang === "fa" ? "en" : "fa")}
-        className="absolute top-6 right-6 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50 text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all backdrop-blur-sm"
+        className="absolute right-4 top-4 z-20 flex items-center gap-2 rounded-full border border-border/50 bg-card/70 px-4 py-2 text-sm text-muted-foreground backdrop-blur-xl transition-all hover:border-primary/30 hover:text-foreground sm:right-6 sm:top-6"
       >
         <Globe className="w-4 h-4" />
         {lang === "fa" ? "EN" : "FA"}
       </button>
 
-      <div className="relative z-10 text-center animate-fade-in">
-        <img src={logoImg} alt="Bloggerha" className="w-24 h-24 mx-auto mb-6 drop-shadow-[0_0_25px_hsl(var(--primary)/0.4)]" />
-        <h1
-          className="text-6xl md:text-7xl font-extrabold mb-3 tracking-tight gold-text"
-          style={{ textShadow: "0 0 40px hsl(var(--primary) / 0.3), 0 0 80px hsl(var(--primary) / 0.15)" }}
-        >
-          Bloggerha
-        </h1>
-        <p
-          className="text-lg md:text-xl mb-10 max-w-md mx-auto font-medium"
-          style={{ color: "hsl(0 0% 95%)", textShadow: "0 2px 12px hsl(0 0% 0% / 0.5), 0 0 30px hsl(0 0% 0% / 0.3)" }}
-        >
-          {t("پلتفرم حرفه‌ای ارتباط اینفلوئنسرها و برندها", "Premium Influencer–Brand Connection Platform")}
-        </p>
+      <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
+        <div className="grid w-full items-center gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,420px)]">
+          <LandingHero
+            className="order-2 lg:order-1"
+            badge={t("نسخه‌ی بازطراحی‌شده‌ی ورود ادمین", "Redesigned admin sign-in")}
+            title={t("لندینگ و ورود ادمین را از نو ساده و قابل‌اعتماد کردیم", "The admin landing and sign-in are now simpler and more reliable")}
+            description={t(
+              "این صفحه از اول برای ورود سریع، بررسی دقیق نقش ادمین و دسترسی بدون ابهام به داشبورد بازطراحی شده است.",
+              "This page was rebuilt for faster sign-in, reliable admin-role verification, and cleaner access to the dashboard.",
+            )}
+            highlights={heroHighlights}
+            stats={heroStats}
+            logoSrc={logoImg}
+            primaryActionLabel={t("ورود سریع ادمین", "Quick admin sign-in")}
+            onPrimaryAction={() => setAuthMode("login")}
+          />
 
-        {!showLogin && !showForgot ? (
-          <button
-            onClick={() => setShowLogin(true)}
-            className="gold-gradient text-primary-foreground font-semibold text-base px-10 py-3.5 rounded-xl inline-flex items-center gap-3 hover:opacity-90 transition-all glow-gold-strong hover:scale-105 active:scale-100"
-          >
-            {t("ورود به پنل مدیریت", "Enter Admin Panel")}
-            <ArrowRight className="w-5 h-5" />
-          </button>
-        ) : showForgot ? (
-          <form
-            onSubmit={handleForgotPassword}
-            className="w-full max-w-sm mx-auto space-y-4 bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 animate-fade-in"
-          >
-            <h2 className="text-lg font-bold text-foreground mb-2">
-              {t("بازنشانی رمز عبور", "Reset Password")}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {t("ایمیل خود را وارد کنید تا لینک بازنشانی ارسال شود", "Enter your email to receive a reset link")}
-            </p>
-            <div className="relative">
-              <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="email"
-                placeholder={t("ایمیل", "Email")}
-                value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
-                className="w-full bg-muted/30 border border-border/50 rounded-xl ps-10 pe-4 py-2.5 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
-                autoComplete="email"
-                dir="ltr"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={forgotLoading}
-              className="w-full gold-gradient text-primary-foreground font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
-            >
-              {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {t("ارسال لینک بازنشانی", "Send Reset Link")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowForgot(false)}
-              className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
-            >
-              {t("بازگشت به ورود", "Back to Login")}
-            </button>
-          </form>
-        ) : (
-          <form
-            onSubmit={handleLogin}
-            className="w-full max-w-sm mx-auto space-y-4 bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 animate-fade-in"
-          >
-            <h2 className="text-lg font-bold text-foreground mb-2">
-              {t("ورود ادمین", "Admin Login")}
-            </h2>
-            <div className="relative">
-              <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="email"
-                placeholder={t("ایمیل", "Email")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-muted/30 border border-border/50 rounded-xl ps-10 pe-4 py-2.5 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
-                autoComplete="email"
-                dir="ltr"
-              />
-            </div>
-            <div className="relative">
-              <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="password"
-                placeholder={t("رمز عبور", "Password")}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-muted/30 border border-border/50 rounded-xl ps-10 pe-4 py-2.5 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
-                autoComplete="current-password"
-                dir="ltr"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full gold-gradient text-primary-foreground font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {t("ورود", "Login")}
-            </button>
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => { setShowForgot(true); setShowLogin(false); }}
-                className="text-xs text-primary hover:underline transition-colors"
-              >
-                {t("فراموشی رمز عبور", "Forgot Password?")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowLogin(false)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {t("بازگشت", "Back")}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
+          <div className="order-1 lg:order-2">
+            <AdminAuthCard
+              mode={authMode}
+              email={email}
+              password={password}
+              resetEmail={forgotEmail}
+              loading={loading}
+              resetLoading={forgotLoading}
+              authLoading={authLoading}
+              onEmailChange={setEmail}
+              onPasswordChange={setPassword}
+              onResetEmailChange={setForgotEmail}
+              onLoginSubmit={handleLogin}
+              onForgotSubmit={handleForgotPassword}
+              onSwitchMode={setAuthMode}
+              copy={authCopy}
+            />
+          </div>
+        </div>
+      </main>
 
-      <p className="absolute bottom-6 text-xs text-muted-foreground z-10">
+      <p className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 text-center text-xs text-muted-foreground">
         © 2026 Bloggerha — {t("تمامی حقوق محفوظ است", "All rights reserved")}
       </p>
     </div>
