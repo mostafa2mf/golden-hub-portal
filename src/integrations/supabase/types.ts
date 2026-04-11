@@ -800,6 +800,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      verify_password: {
+        Args: { _input_password: string; _stored_hash: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
