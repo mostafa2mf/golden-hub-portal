@@ -175,36 +175,66 @@ const ApprovalsPage = () => {
               <p className="text-sm text-muted-foreground">{t("درخواست جدیدی در انتظار تأیید نیست", "No pending requests")}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pendingInfluencers.map((inf: any) => (
-                <div key={inf.id} className="group bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-[var(--gold-glow)] transition-all duration-300">
-                  {/* Avatar header */}
-                  <div className="h-28 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent flex items-center justify-center">
-                    {inf.avatar_url ? (
-                      <img src={inf.avatar_url} alt={inf.name} className="w-20 h-20 rounded-2xl object-cover ring-3 ring-card shadow-lg" />
-                    ) : (
-                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-primary font-bold text-3xl ring-3 ring-card shadow-lg">{inf.name.charAt(0)}</div>
-                    )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {pendingInfluencers.map((inf: any) => {
+                const handleClean = (inf.handle || "").replace(/^@/, "");
+                const igUrl = handleClean ? `https://instagram.com/${handleClean}` : null;
+                return (
+                <div key={inf.id} className="group bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-[var(--gold-glow)] transition-all duration-300">
+                  {/* Cover with avatar */}
+                  <div className="relative h-32 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent overflow-hidden">
+                    {inf.avatar_url && <img src={inf.avatar_url} className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110" alt="" />}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      {inf.avatar_url ? (
+                        <img src={inf.avatar_url} alt={inf.name} className="w-24 h-24 rounded-2xl object-cover ring-4 ring-card shadow-2xl" />
+                      ) : (
+                        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary/40 to-primary/20 flex items-center justify-center text-primary font-bold text-4xl ring-4 ring-card shadow-2xl">{inf.name.charAt(0)}</div>
+                      )}
+                    </div>
+                    <div className="absolute top-2 end-2 px-2 py-0.5 rounded-full bg-warning/20 backdrop-blur-sm border border-warning/30 text-warning text-[10px] font-bold">{t("در انتظار", "PENDING")}</div>
                   </div>
-                  <div className="p-4 text-center">
-                    <h3 className="text-sm font-bold text-foreground">{inf.name}</h3>
-                    {inf.handle && <p className="text-xs text-primary/80 mt-0.5">@{inf.handle.replace('@', '')}</p>}
-                    <div className="flex items-center justify-center gap-2 mt-2 text-xs text-muted-foreground">
-                      {inf.city && <span>{inf.city}</span>}
-                      {inf.followers > 0 && <span>• {inf.followers >= 1000 ? `${(inf.followers / 1000).toFixed(0)}K` : inf.followers}</span>}
+                  <div className="p-4 space-y-3">
+                    <div className="text-center">
+                      <h3 className="text-base font-bold text-foreground">{inf.name}</h3>
+                      {handleClean && igUrl && (
+                        <a href={igUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:text-primary/80 transition-colors group/link">
+                          <Instagram className="w-3.5 h-3.5" />@{handleClean}
+                          <ExternalLink className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                        </a>
+                      )}
                     </div>
-                    <div className="flex items-center justify-center gap-1 mt-2 text-[11px] text-muted-foreground/70">
+
+                    {/* Mini stats */}
+                    <div className="grid grid-cols-3 gap-1.5 text-center">
+                      <div className="p-2 rounded-lg bg-muted/30">
+                        <div className="text-xs font-bold text-foreground">{inf.followers >= 1000 ? `${(inf.followers / 1000).toFixed(1)}K` : inf.followers || "0"}</div>
+                        <div className="text-[9px] text-muted-foreground">{t("فالوور", "Followers")}</div>
+                      </div>
+                      <div className="p-2 rounded-lg bg-muted/30">
+                        <div className="text-xs font-bold text-foreground">{inf.engagement || 0}%</div>
+                        <div className="text-[9px] text-muted-foreground">{t("تعامل", "Engage")}</div>
+                      </div>
+                      <div className="p-2 rounded-lg bg-muted/30">
+                        <div className="text-xs font-bold text-foreground truncate">{inf.city || "—"}</div>
+                        <div className="text-[9px] text-muted-foreground">{t("شهر", "City")}</div>
+                      </div>
+                    </div>
+
+                    {inf.bio && <p className="text-[11px] text-muted-foreground/80 line-clamp-2 text-center px-1">{inf.bio}</p>}
+
+                    <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground/60">
                       <Clock className="w-3 h-3" />
-                      <span>{formatDate(inf.submitted_at)} — {formatTime(inf.submitted_at)}</span>
+                      <span>{formatDate(inf.submitted_at)} • {formatTime(inf.submitted_at)}</span>
                     </div>
-                    <div className="flex items-center justify-center gap-2 mt-4">
-                      <button onClick={() => setDetailModal({ ...inf, _type: "influencer" })} className="p-2 rounded-xl bg-muted/30 border border-border/20 hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-all"><Eye className="w-4 h-4" /></button>
-                      <button onClick={() => handleApprove(inf.id, "influencer", inf.name)} className="p-2 rounded-xl bg-success/10 border border-success/20 hover:bg-success/20 text-success transition-all"><Check className="w-4 h-4" /></button>
-                      <button onClick={() => setRejectModal({ id: inf.id, type: "influencer", name: inf.name })} className="p-2 rounded-xl bg-destructive/10 border border-destructive/20 hover:bg-destructive/20 text-destructive transition-all"><X className="w-4 h-4" /></button>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button onClick={() => setDetailModal({ ...inf, _type: "influencer" })} className="flex-1 py-2 rounded-xl bg-muted/40 border border-border/20 hover:bg-muted/70 text-foreground text-xs font-medium transition-all flex items-center justify-center gap-1"><Eye className="w-3.5 h-3.5" />{t("جزئیات", "Details")}</button>
+                      <button onClick={() => handleApprove(inf.id, "influencer", inf.name)} className="p-2 rounded-xl bg-success/10 border border-success/30 hover:bg-success/20 text-success transition-all" title={t("تأیید", "Approve")}><Check className="w-4 h-4" /></button>
+                      <button onClick={() => setRejectModal({ id: inf.id, type: "influencer", name: inf.name })} className="p-2 rounded-xl bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 text-destructive transition-all" title={t("رد", "Reject")}><X className="w-4 h-4" /></button>
                     </div>
                   </div>
                 </div>
-              ))}
+              );})}
             </div>
           )}
         </TabsContent>
