@@ -439,9 +439,23 @@ const ApprovalsPage = () => {
                 ) : (
                   <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-bold text-3xl ring-2 ring-primary/20">{detailModal.name.charAt(0)}</div>
                 )}
-                <div>
+                <div className="flex-1 min-w-0">
                   <div className="text-xl font-bold text-foreground">{detailModal.name}</div>
-                  <div className="text-sm text-muted-foreground mt-0.5">{detailModal.handle || detailModal.contact_name || ""} {detailModal.city ? `• ${detailModal.city}` : ""}</div>
+                  {detailModal.handle && (
+                    <a
+                      href={`https://instagram.com/${(detailModal.handle || "").replace(/^@/, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-1 text-sm text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <Instagram className="w-4 h-4" />@{(detailModal.handle || "").replace(/^@/, "")}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  {!detailModal.handle && detailModal.contact_name && (
+                    <div className="text-sm text-muted-foreground mt-0.5">{detailModal.contact_name}</div>
+                  )}
+                  {detailModal.city && <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1"><MapPin className="w-3 h-3" />{detailModal.city}</div>}
                   <div className="mt-1.5"><StatusBadge status={detailModal.status} /></div>
                 </div>
               </div>
