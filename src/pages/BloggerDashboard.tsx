@@ -44,7 +44,6 @@ const BloggerDashboard = () => {
       // Only show active campaigns
       const activeCampaigns = (campaignsRes.data || []).filter((ci: any) => ci.campaigns?.status === "active");
       setCampaigns(activeCampaigns);
-      setCampaigns(campaignsRes.data || []);
       setMeetings(meetingsRes.data || []);
       setMessages(messagesRes.data || []);
       if (profileRes.data) setEditForm({ bio: profileRes.data.bio || "", city: profileRes.data.city || "" });
