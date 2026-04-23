@@ -41,6 +41,9 @@ const BloggerDashboard = () => {
         supabase.from("conversations").select("*, chat_messages(content, created_at, sender_role)").eq("participant_entity_id", session.entity_id).order("last_message_at", { ascending: false }).limit(10),
       ]);
       setProfile(profileRes.data);
+      // Only show active campaigns
+      const activeCampaigns = (campaignsRes.data || []).filter((ci: any) => ci.campaigns?.status === "active");
+      setCampaigns(activeCampaigns);
       setCampaigns(campaignsRes.data || []);
       setMeetings(meetingsRes.data || []);
       setMessages(messagesRes.data || []);
