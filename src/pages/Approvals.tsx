@@ -86,6 +86,15 @@ const ApprovalsPage = () => {
   ];
 
   const handleApprove = async (id: string, type: string, name: string) => {
+    if (type === "review") {
+      const { error } = await supabase.rpc("set_review_status" as any, { _review_id: id, _new_status: "active" as any });
+      if (error) toast.error(t("خطا در تأیید", "Error approving"));
+      else {
+        toast.success(t(`ریویو تأیید شد`, `Review approved`));
+        queryClient.invalidateQueries({ queryKey: ["reviews"] });
+      }
+      return;
+    }
     const { error } = await supabase.functions.invoke("notify-approval", {
       body: { entity_id: id, entity_type: type, action: "approve" },
     });
@@ -100,6 +109,17 @@ const ApprovalsPage = () => {
 
   const handleReject = async () => {
     if (!rejectModal) return;
+    if (rejectModal.type === "review") {
+      const { error } = await supabase.rpc("set_review_status" as any, { _review_id: rejectModal.id, _new_status: "rejected" as any });
+      if (error) toast.error(t("خطا در رد", "Error rejecting"));
+      else {
+        toast.error(t("ریویو رد شد", "Review rejected"));
+        queryClient.invalidateQueries({ queryKey: ["reviews"] });
+      }
+      setRejectModal(null);
+      setRejectReason("");
+      return;
+    }
     const { error } = await supabase.functions.invoke("notify-approval", {
       body: { entity_id: rejectModal.id, entity_type: rejectModal.type, action: "reject", reject_reason: rejectReason },
     });
