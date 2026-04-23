@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Grid3X3, List, Eye, Ban, MessageSquare, CheckCircle, Trash2, UserPlus, Image as ImageIcon, Download } from "lucide-react";
+import { Search, Grid3X3, List, Eye, Ban, MessageSquare, CheckCircle, Trash2, UserPlus, Image as ImageIcon, Download, Instagram, ExternalLink } from "lucide-react";
 import { exportToCSV } from "@/utils/csvExport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -203,9 +203,22 @@ const InfluencersPage = () => {
                 ) : (
                   <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-3xl">{detail.name.charAt(0)}</div>
                 )}
-                <div>
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2"><h2 className="text-xl font-bold">{detail.name}</h2>{detail.verified && <CheckCircle className="w-5 h-5 text-primary" />}</div>
-                  <p className="text-sm text-muted-foreground">{detail.handle || "-"} • {detail.city || "-"}</p>
+                  {detail.handle ? (
+                    <a
+                      href={`https://instagram.com/${(detail.handle || "").replace(/^@/, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-1 text-sm text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <Instagram className="w-4 h-4" />@{(detail.handle || "").replace(/^@/, "")}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">—</p>
+                  )}
+                  {detail.city && <p className="text-xs text-muted-foreground mt-0.5">{detail.city}</p>}
                   <StatusBadge status={detail.status} className="mt-1" />
                 </div>
               </div>

@@ -74,7 +74,7 @@ const CampaignsPage = () => {
       description: addForm.description || null,
       start_date: addForm.start_date || null,
       end_date: addForm.end_date || null,
-      status: "pending",
+      status: "active",
     });
     if (error) toast.error(error.message);
     else {
