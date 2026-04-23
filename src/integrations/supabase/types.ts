@@ -800,6 +800,13 @@ export type Database = {
           read_ct: number
         }[]
       }
+      set_review_status: {
+        Args: {
+          _new_status: Database["public"]["Enums"]["entity_status"]
+          _review_id: string
+        }
+        Returns: undefined
+      }
       verify_password: {
         Args: { _input_password: string; _stored_hash: string }
         Returns: boolean
