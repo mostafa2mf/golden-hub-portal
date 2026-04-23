@@ -41,7 +41,9 @@ const BusinessDashboard = () => {
         supabase.from("conversations").select("*, chat_messages(content, created_at, sender_role)").eq("participant_entity_id", session.entity_id).order("last_message_at", { ascending: false }).limit(10),
       ]);
       setProfile(profileRes.data);
-      setCampaigns(campaignsRes.data || []);
+      // Only active campaigns shown in dashboard list
+      const activeCampaigns = (campaignsRes.data || []).filter((c: any) => c.status === "active");
+      setCampaigns(activeCampaigns);
       setMeetings(meetingsRes.data || []);
       setMessages(messagesRes.data || []);
       if (profileRes.data) setEditForm({
