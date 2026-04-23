@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, X, Eye, Search, Clock, User, Building2, Star, Image as ImageIcon } from "lucide-react";
+import { Check, X, Eye, Search, Clock, User, Building2, Star, Image as ImageIcon, Instagram, Mail, Phone, MapPin, Users as UsersIcon, TrendingUp, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
