@@ -245,8 +245,13 @@ const CampaignsPage = () => {
                         <div className="h-1.5 bg-muted/50 rounded-full"><div className="h-full rounded-full gold-gradient" style={{ width: `${camp.performance}%` }} /></div>
                       </div>
                     )}
+                    {camp.status === "active" && (
+                      <Button variant="outline" size="sm" className="mt-3 w-full rounded-xl gap-2 border-primary/40 text-primary hover:bg-primary/10" onClick={(e) => { e.stopPropagation(); setSendCampaign(camp); }}>
+                        <Send className="w-4 h-4" />{t("ارسال به بلاگر", "Send to Bloggers")}
+                      </Button>
+                    )}
                     {(camp.status === "active" || camp.status === "pending" || camp.status === "scheduled") && (
-                      <Button variant="ghost" size="sm" className="mt-3 w-full text-destructive hover:bg-destructive/10 rounded-xl gap-2" onClick={(e) => { e.stopPropagation(); setCancelModal(camp.id); }}>
+                      <Button variant="ghost" size="sm" className="mt-2 w-full text-destructive hover:bg-destructive/10 rounded-xl gap-2" onClick={(e) => { e.stopPropagation(); setCancelModal(camp.id); }}>
                         <XCircle className="w-4 h-4" />{t("لغو کمپین", "Cancel Campaign")}
                       </Button>
                     )}
