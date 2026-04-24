@@ -153,6 +153,58 @@ const BloggerDashboard = () => {
           ))}
         </div>
 
+        {/* Invitations Inbox */}
+        {invitations.length > 0 && (
+          <div className="bg-card/80 border border-primary/40 rounded-2xl p-5">
+            <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Mail className="w-5 h-5 text-primary" />{t("دعوت‌نامه‌های جدید", "New Invitations")}
+              <span className="ms-auto text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground">{invitations.length}</span>
+            </h2>
+            <div className="space-y-3">
+              {invitations.map((ci: any) => (
+                <div key={ci.id} className="p-4 bg-muted/30 rounded-xl border border-border/40">
+                  <div className="flex items-start gap-3 mb-3">
+                    {ci.campaigns?.images?.[0] || ci.campaigns?.businesses?.logo_url ? (
+                      <img src={ci.campaigns.images?.[0] || ci.campaigns.businesses.logo_url} alt={ci.campaigns?.title} className="w-14 h-14 rounded-xl object-cover" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center"><Megaphone className="w-6 h-6 text-primary" /></div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{ci.campaigns?.title}</p>
+                      <p className="text-xs text-muted-foreground">{ci.campaigns?.businesses?.name || "-"}</p>
+                      {ci.campaigns?.description && (
+                        <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{ci.campaigns.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
+                    {ci.scheduled_date && (
+                      <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-primary" /><span className="text-foreground">{ci.scheduled_date}</span></div>
+                    )}
+                    {ci.scheduled_time && (
+                      <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-primary" /><span className="text-foreground">{ci.scheduled_time}</span></div>
+                    )}
+                    {ci.location && (
+                      <div className="flex items-center gap-1.5 col-span-2"><MapPin className="w-3.5 h-3.5 text-primary" /><span className="text-foreground truncate">{ci.location}</span></div>
+                    )}
+                  </div>
+                  {ci.note && (
+                    <p className="text-xs text-foreground/80 bg-background/50 rounded-lg p-2 mb-3">{ci.note}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => respondInvitation(ci, "accepted")} className="flex-1 gap-1.5 rounded-xl gold-gradient text-primary-foreground border-0">
+                      <Check className="w-4 h-4" />{t("قبول", "Accept")}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => respondInvitation(ci, "declined")} className="flex-1 gap-1.5 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10">
+                      <X className="w-4 h-4" />{t("رد", "Decline")}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Campaigns */}
         <div className="bg-card/80 border border-border/50 rounded-2xl p-5">
           <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
