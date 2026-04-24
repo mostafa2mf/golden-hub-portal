@@ -440,6 +440,15 @@ const CampaignsPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Send Campaign Modal */}
+      {sendCampaign && (
+        <SendCampaignModal
+          campaign={sendCampaign}
+          open={!!sendCampaign}
+          onOpenChange={(v) => !v && setSendCampaign(null)}
+        />
+      )}
     </AdminLayout>
   );
 };
