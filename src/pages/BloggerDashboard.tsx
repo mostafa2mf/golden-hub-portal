@@ -131,12 +131,15 @@ const BloggerDashboard = () => {
           ) : (
             <div className="space-y-3">
               {campaigns.map((ci: any) => (
-                <div key={ci.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{ci.campaigns?.title || "-"}</p>
-                    <p className="text-xs text-muted-foreground">{ci.campaigns?.status || "-"}</p>
+                <div key={ci.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                  {ci.campaigns?.images?.[0] && (
+                    <img src={ci.campaigns.images[0]} alt={ci.campaigns?.title} className="w-12 h-12 rounded-lg object-cover" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{ci.campaigns?.title || "-"}</p>
+                    <p className="text-xs text-muted-foreground truncate">{ci.campaigns?.city || "-"}</p>
                   </div>
-                  <span className="text-xs text-muted-foreground">{ci.campaigns?.budget || "-"}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">{t("فعال", "Active")}</span>
                 </div>
               ))}
             </div>
