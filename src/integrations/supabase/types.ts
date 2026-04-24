@@ -189,6 +189,7 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          address: string | null
           budget: string | null
           business_id: string
           category_id: string | null
@@ -197,6 +198,7 @@ export type Database = {
           description: string | null
           end_date: string | null
           id: string
+          images: string[] | null
           performance: number
           start_date: string | null
           status: Database["public"]["Enums"]["campaign_status"]
@@ -204,6 +206,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address?: string | null
           budget?: string | null
           business_id: string
           category_id?: string | null
@@ -212,6 +215,7 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           id?: string
+          images?: string[] | null
           performance?: number
           start_date?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
@@ -219,6 +223,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string | null
           budget?: string | null
           business_id?: string
           category_id?: string | null
@@ -227,6 +232,7 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           id?: string
+          images?: string[] | null
           performance?: number
           start_date?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]

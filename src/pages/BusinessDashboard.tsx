@@ -138,12 +138,15 @@ const BusinessDashboard = () => {
           ) : (
             <div className="space-y-3">
               {campaigns.map((c: any) => (
-                <div key={c.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{c.title}</p>
-                    <p className="text-xs text-muted-foreground">{c.status} • {c.city || "-"}</p>
+                <div key={c.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                  {c.images?.[0] && (
+                    <img src={c.images[0]} alt={c.title} className="w-12 h-12 rounded-lg object-cover" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{c.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">{c.city || "-"}{c.address ? ` • ${c.address}` : ""}</p>
                   </div>
-                  <span className="text-xs text-muted-foreground">{c.budget || "-"}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">{t("فعال", "Active")}</span>
                 </div>
               ))}
             </div>
