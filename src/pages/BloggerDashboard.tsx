@@ -67,6 +67,35 @@ const BloggerDashboard = () => {
     setEditOpen(false);
   };
 
+  const respondInvitation = async (ci: any, status: "accepted" | "declined") => {
+    const { error } = await supabase
+      .from("campaign_influencers")
+      .update({ status, responded_at: new Date().toISOString() })
+      .eq("id", ci.id);
+    if (error) { toast.error(error.message); return; }
+
+    // If accepted and there's a scheduled date, also create a meeting record
+    if (status === "accepted" && ci.scheduled_date && ci.campaigns?.business_id) {
+      await supabase.from("meetings").insert({
+        business_id: ci.campaigns.business_id,
+        influencer_id: session!.entity_id,
+        campaign_id: ci.campaign_id,
+        meeting_date: ci.scheduled_date,
+        meeting_time: ci.scheduled_time || "12:00",
+        location: ci.location || null,
+        city: ci.campaigns.city || null,
+        notes: ci.note || null,
+        status: "confirmed",
+      });
+    }
+
+    toast.success(status === "accepted" ? t("دعوت پذیرفته شد", "Invitation accepted") : t("دعوت رد شد", "Invitation declined"));
+    setInvitations(prev => prev.filter(i => i.id !== ci.id));
+    if (status === "accepted") {
+      setCampaigns(prev => [...prev, { ...ci, status }]);
+    }
+  };
+
   if (loading || !session) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
