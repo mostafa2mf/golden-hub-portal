@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import {
   LogOut, User, LayoutDashboard, Megaphone, Calendar, MessageSquare,
-  Edit, Save, Star, TrendingUp, Users
+  Edit, Save, Star, TrendingUp, Users, Mail, Check, X, MapPin, Clock
 } from "lucide-react";
 
 const BloggerDashboard = () => {
@@ -18,6 +18,7 @@ const BloggerDashboard = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [invitations, setInvitations] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
   const [editOpen, setEditOpen] = useState(false);
@@ -36,14 +37,16 @@ const BloggerDashboard = () => {
       setLoadingData(true);
       const [profileRes, campaignsRes, meetingsRes, messagesRes] = await Promise.all([
         supabase.from("influencers").select("*").eq("id", session.entity_id).maybeSingle(),
-        supabase.from("campaign_influencers").select("*, campaigns(*)").eq("influencer_id", session.entity_id),
+        supabase.from("campaign_influencers").select("*, campaigns(*, businesses(name, logo_url))").eq("influencer_id", session.entity_id),
         supabase.from("meetings").select("*, businesses(name)").eq("influencer_id", session.entity_id).order("meeting_date", { ascending: true }).limit(5),
         supabase.from("conversations").select("*, chat_messages(content, created_at, sender_role)").eq("participant_entity_id", session.entity_id).order("last_message_at", { ascending: false }).limit(10),
       ]);
       setProfile(profileRes.data);
-      // Only show active campaigns
-      const activeCampaigns = (campaignsRes.data || []).filter((ci: any) => ci.campaigns?.status === "active");
-      setCampaigns(activeCampaigns);
+      const all = (campaignsRes.data || []);
+      // Active campaigns the blogger has accepted
+      setCampaigns(all.filter((ci: any) => ci.status === "accepted" && ci.campaigns?.status === "active"));
+      // Pending invitations to show in inbox
+      setInvitations(all.filter((ci: any) => ci.status === "pending"));
       setMeetings(meetingsRes.data || []);
       setMessages(messagesRes.data || []);
       if (profileRes.data) setEditForm({ bio: profileRes.data.bio || "", city: profileRes.data.city || "" });
