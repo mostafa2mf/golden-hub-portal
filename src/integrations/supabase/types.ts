@@ -157,18 +157,36 @@ export type Database = {
           campaign_id: string
           id: string
           influencer_id: string
+          location: string | null
+          note: string | null
+          responded_at: string | null
+          scheduled_date: string | null
+          scheduled_time: string | null
+          status: Database["public"]["Enums"]["invitation_status"]
         }
         Insert: {
           assigned_at?: string
           campaign_id: string
           id?: string
           influencer_id: string
+          location?: string | null
+          note?: string | null
+          responded_at?: string | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          status?: Database["public"]["Enums"]["invitation_status"]
         }
         Update: {
           assigned_at?: string
           campaign_id?: string
           id?: string
           influencer_id?: string
+          location?: string | null
+          note?: string | null
+          responded_at?: string | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          status?: Database["public"]["Enums"]["invitation_status"]
         }
         Relationships: [
           {
@@ -832,6 +850,7 @@ export type Database = {
       credential_entity_type: "blogger" | "business"
       entity_status: "pending" | "active" | "suspended" | "rejected"
       gender_type: "male" | "female" | "other"
+      invitation_status: "pending" | "accepted" | "declined"
       meeting_status: "pending" | "confirmed" | "cancelled" | "completed"
       message_role: "influencer" | "business" | "admin"
     }
@@ -975,6 +994,7 @@ export const Constants = {
       credential_entity_type: ["blogger", "business"],
       entity_status: ["pending", "active", "suspended", "rejected"],
       gender_type: ["male", "female", "other"],
+      invitation_status: ["pending", "accepted", "declined"],
       meeting_status: ["pending", "confirmed", "cancelled", "completed"],
       message_role: ["influencer", "business", "admin"],
     },

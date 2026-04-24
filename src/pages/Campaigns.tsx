@@ -5,12 +5,13 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, Pause, Edit, Plus, XCircle, Image as ImageIcon, Upload, Download, X } from "lucide-react";
+import { Eye, Pause, Edit, Plus, XCircle, Image as ImageIcon, Upload, Download, X, Send } from "lucide-react";
 import { exportToCSV } from "@/utils/csvExport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { SendCampaignModal } from "@/components/admin/SendCampaignModal";
 import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
@@ -21,6 +22,7 @@ const CampaignsPage = () => {
   const [detail, setDetail] = useState<any>(null);
   const [addModal, setAddModal] = useState(false);
   const [cancelModal, setCancelModal] = useState<string | null>(null);
+  const [sendCampaign, setSendCampaign] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -243,8 +245,13 @@ const CampaignsPage = () => {
                         <div className="h-1.5 bg-muted/50 rounded-full"><div className="h-full rounded-full gold-gradient" style={{ width: `${camp.performance}%` }} /></div>
                       </div>
                     )}
+                    {camp.status === "active" && (
+                      <Button variant="outline" size="sm" className="mt-3 w-full rounded-xl gap-2 border-primary/40 text-primary hover:bg-primary/10" onClick={(e) => { e.stopPropagation(); setSendCampaign(camp); }}>
+                        <Send className="w-4 h-4" />{t("ارسال به بلاگر", "Send to Bloggers")}
+                      </Button>
+                    )}
                     {(camp.status === "active" || camp.status === "pending" || camp.status === "scheduled") && (
-                      <Button variant="ghost" size="sm" className="mt-3 w-full text-destructive hover:bg-destructive/10 rounded-xl gap-2" onClick={(e) => { e.stopPropagation(); setCancelModal(camp.id); }}>
+                      <Button variant="ghost" size="sm" className="mt-2 w-full text-destructive hover:bg-destructive/10 rounded-xl gap-2" onClick={(e) => { e.stopPropagation(); setCancelModal(camp.id); }}>
                         <XCircle className="w-4 h-4" />{t("لغو کمپین", "Cancel Campaign")}
                       </Button>
                     )}
@@ -433,6 +440,15 @@ const CampaignsPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Send Campaign Modal */}
+      {sendCampaign && (
+        <SendCampaignModal
+          campaign={sendCampaign}
+          open={!!sendCampaign}
+          onOpenChange={(v) => !v && setSendCampaign(null)}
+        />
+      )}
     </AdminLayout>
   );
 };

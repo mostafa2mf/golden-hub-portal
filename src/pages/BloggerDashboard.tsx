@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import {
   LogOut, User, LayoutDashboard, Megaphone, Calendar, MessageSquare,
-  Edit, Save, Star, TrendingUp, Users
+  Edit, Save, Star, TrendingUp, Users, Mail, Check, X, MapPin, Clock
 } from "lucide-react";
 
 const BloggerDashboard = () => {
@@ -18,6 +18,7 @@ const BloggerDashboard = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [invitations, setInvitations] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
   const [editOpen, setEditOpen] = useState(false);
@@ -36,14 +37,16 @@ const BloggerDashboard = () => {
       setLoadingData(true);
       const [profileRes, campaignsRes, meetingsRes, messagesRes] = await Promise.all([
         supabase.from("influencers").select("*").eq("id", session.entity_id).maybeSingle(),
-        supabase.from("campaign_influencers").select("*, campaigns(*)").eq("influencer_id", session.entity_id),
+        supabase.from("campaign_influencers").select("*, campaigns(*, businesses(name, logo_url))").eq("influencer_id", session.entity_id),
         supabase.from("meetings").select("*, businesses(name)").eq("influencer_id", session.entity_id).order("meeting_date", { ascending: true }).limit(5),
         supabase.from("conversations").select("*, chat_messages(content, created_at, sender_role)").eq("participant_entity_id", session.entity_id).order("last_message_at", { ascending: false }).limit(10),
       ]);
       setProfile(profileRes.data);
-      // Only show active campaigns
-      const activeCampaigns = (campaignsRes.data || []).filter((ci: any) => ci.campaigns?.status === "active");
-      setCampaigns(activeCampaigns);
+      const all = (campaignsRes.data || []);
+      // Active campaigns the blogger has accepted
+      setCampaigns(all.filter((ci: any) => ci.status === "accepted" && ci.campaigns?.status === "active"));
+      // Pending invitations to show in inbox
+      setInvitations(all.filter((ci: any) => ci.status === "pending"));
       setMeetings(meetingsRes.data || []);
       setMessages(messagesRes.data || []);
       if (profileRes.data) setEditForm({ bio: profileRes.data.bio || "", city: profileRes.data.city || "" });
@@ -62,6 +65,35 @@ const BloggerDashboard = () => {
     toast.success(t("پروفایل بروزرسانی شد", "Profile updated"));
     setProfile((p: any) => ({ ...p, bio: editForm.bio, city: editForm.city }));
     setEditOpen(false);
+  };
+
+  const respondInvitation = async (ci: any, status: "accepted" | "declined") => {
+    const { error } = await supabase
+      .from("campaign_influencers")
+      .update({ status, responded_at: new Date().toISOString() })
+      .eq("id", ci.id);
+    if (error) { toast.error(error.message); return; }
+
+    // If accepted and there's a scheduled date, also create a meeting record
+    if (status === "accepted" && ci.scheduled_date && ci.campaigns?.business_id) {
+      await supabase.from("meetings").insert({
+        business_id: ci.campaigns.business_id,
+        influencer_id: session!.entity_id,
+        campaign_id: ci.campaign_id,
+        meeting_date: ci.scheduled_date,
+        meeting_time: ci.scheduled_time || "12:00",
+        location: ci.location || null,
+        city: ci.campaigns.city || null,
+        notes: ci.note || null,
+        status: "confirmed",
+      });
+    }
+
+    toast.success(status === "accepted" ? t("دعوت پذیرفته شد", "Invitation accepted") : t("دعوت رد شد", "Invitation declined"));
+    setInvitations(prev => prev.filter(i => i.id !== ci.id));
+    if (status === "accepted") {
+      setCampaigns(prev => [...prev, { ...ci, status }]);
+    }
   };
 
   if (loading || !session) {
@@ -120,6 +152,58 @@ const BloggerDashboard = () => {
             </div>
           ))}
         </div>
+
+        {/* Invitations Inbox */}
+        {invitations.length > 0 && (
+          <div className="bg-card/80 border border-primary/40 rounded-2xl p-5">
+            <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Mail className="w-5 h-5 text-primary" />{t("دعوت‌نامه‌های جدید", "New Invitations")}
+              <span className="ms-auto text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground">{invitations.length}</span>
+            </h2>
+            <div className="space-y-3">
+              {invitations.map((ci: any) => (
+                <div key={ci.id} className="p-4 bg-muted/30 rounded-xl border border-border/40">
+                  <div className="flex items-start gap-3 mb-3">
+                    {ci.campaigns?.images?.[0] || ci.campaigns?.businesses?.logo_url ? (
+                      <img src={ci.campaigns.images?.[0] || ci.campaigns.businesses.logo_url} alt={ci.campaigns?.title} className="w-14 h-14 rounded-xl object-cover" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center"><Megaphone className="w-6 h-6 text-primary" /></div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{ci.campaigns?.title}</p>
+                      <p className="text-xs text-muted-foreground">{ci.campaigns?.businesses?.name || "-"}</p>
+                      {ci.campaigns?.description && (
+                        <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{ci.campaigns.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
+                    {ci.scheduled_date && (
+                      <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-primary" /><span className="text-foreground">{ci.scheduled_date}</span></div>
+                    )}
+                    {ci.scheduled_time && (
+                      <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-primary" /><span className="text-foreground">{ci.scheduled_time}</span></div>
+                    )}
+                    {ci.location && (
+                      <div className="flex items-center gap-1.5 col-span-2"><MapPin className="w-3.5 h-3.5 text-primary" /><span className="text-foreground truncate">{ci.location}</span></div>
+                    )}
+                  </div>
+                  {ci.note && (
+                    <p className="text-xs text-foreground/80 bg-background/50 rounded-lg p-2 mb-3">{ci.note}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => respondInvitation(ci, "accepted")} className="flex-1 gap-1.5 rounded-xl gold-gradient text-primary-foreground border-0">
+                      <Check className="w-4 h-4" />{t("قبول", "Accept")}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => respondInvitation(ci, "declined")} className="flex-1 gap-1.5 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10">
+                      <X className="w-4 h-4" />{t("رد", "Decline")}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Campaigns */}
         <div className="bg-card/80 border border-border/50 rounded-2xl p-5">
