@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserAuth } from "@/contexts/UserAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import {
   LogOut, User, LayoutDashboard, Megaphone, Calendar, MessageSquare,
-  Edit, Save, Star, TrendingUp, Users, Mail, Check, X, MapPin, Clock
+  Edit, Save, Star, TrendingUp, Users, Mail, Check, X, MapPin, Clock, Search, ArrowUpDown
 } from "lucide-react";
+
+type InviteTab = "pending" | "accepted" | "declined";
 
 const BloggerDashboard = () => {
   const { t, dir } = useLanguage();
