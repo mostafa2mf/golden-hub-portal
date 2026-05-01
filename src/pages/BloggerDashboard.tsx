@@ -215,52 +215,158 @@ const BloggerDashboard = () => {
         {/* Invitations Inbox */}
         {invitations.length > 0 && (
           <div className="bg-card/80 border border-primary/40 rounded-2xl p-5">
-            <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Mail className="w-5 h-5 text-primary" />{t("دعوت‌نامه‌های جدید", "New Invitations")}
-              <span className="ms-auto text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground">{invitations.length}</span>
-            </h2>
-            <div className="space-y-3">
-              {invitations.map((ci: any) => (
-                <div key={ci.id} className="p-4 bg-muted/30 rounded-xl border border-border/40">
-                  <div className="flex items-start gap-3 mb-3">
-                    {ci.campaigns?.images?.[0] || ci.campaigns?.businesses?.logo_url ? (
-                      <img src={ci.campaigns.images?.[0] || ci.campaigns.businesses.logo_url} alt={ci.campaigns?.title} className="w-14 h-14 rounded-xl object-cover" />
-                    ) : (
-                      <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center"><Megaphone className="w-6 h-6 text-primary" /></div>
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <Mail className="w-5 h-5 text-primary" />
+              <h2 className="font-semibold text-foreground">{t("دعوت‌نامه‌ها", "Invitations")}</h2>
+              {unreadCount > 0 && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground font-bold animate-pulse">
+                  {unreadCount} {t("جدید", "new")}
+                </span>
+              )}
+              {unreadCount > 0 && (
+                <Button size="sm" variant="ghost" onClick={markAllRead} className="ms-auto h-7 text-xs text-muted-foreground hover:text-primary">
+                  {t("علامت همه به‌عنوان خوانده‌شده", "Mark all read")}
+                </Button>
+              )}
+            </div>
+
+            {/* Filter tabs */}
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              {([
+                { key: "pending", label: t("در انتظار", "Pending") },
+                { key: "accepted", label: t("پذیرفته‌شده", "Accepted") },
+                { key: "declined", label: t("رد شده", "Declined") },
+              ] as { key: InviteTab; label: string }[]).map(tab => {
+                const count = invitations.filter((i: any) => i.status === tab.key).length;
+                const tabUnread = invitations.filter((i: any) => i.status === tab.key && !readIds.has(i.id)).length;
+                const active = inviteTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setInviteTab(tab.key)}
+                    className={`relative text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/30 text-muted-foreground border-border/40 hover:text-foreground"
+                    }`}
+                  >
+                    {tab.label} ({count})
+                    {tabUnread > 0 && !active && (
+                      <span className="absolute -top-1 -end-1 w-2 h-2 rounded-full bg-destructive" />
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground">{ci.campaigns?.title}</p>
-                      <p className="text-xs text-muted-foreground">{ci.campaigns?.businesses?.name || "-"}</p>
-                      {ci.campaigns?.description && (
-                        <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{ci.campaigns.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search + sort */}
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <div className="relative flex-1 min-w-[180px]">
+                <Search className="absolute top-1/2 -translate-y-1/2 start-3 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={inviteSearch}
+                  onChange={e => setInviteSearch(e.target.value)}
+                  placeholder={t("جستجو در عنوان، کسب‌وکار یا مکان…", "Search title, business, location…")}
+                  className="ps-9 h-9 rounded-xl bg-background/50"
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setInviteSortDesc(v => !v)}
+                className="h-9 gap-1.5 rounded-xl text-xs"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                {inviteSortDesc ? t("جدیدترین", "Newest") : t("قدیمی‌ترین", "Oldest")}
+              </Button>
+            </div>
+
+            {filteredInvitations.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {t("موردی یافت نشد", "No invitations found")}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {filteredInvitations.map((ci: any) => {
+                  const isUnread = !readIds.has(ci.id);
+                  const isPending = ci.status === "pending";
+                  return (
+                    <div
+                      key={ci.id}
+                      onClick={() => {
+                        if (isUnread) {
+                          const next = new Set(readIds);
+                          next.add(ci.id);
+                          persistRead(next);
+                        }
+                      }}
+                      className={`p-4 rounded-xl border transition-colors cursor-pointer ${
+                        isUnread
+                          ? "bg-primary/5 border-primary/40"
+                          : "bg-muted/30 border-border/40"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3 mb-3">
+                        {ci.campaigns?.images?.[0] || ci.campaigns?.businesses?.logo_url ? (
+                          <img src={ci.campaigns.images?.[0] || ci.campaigns.businesses.logo_url} alt={ci.campaigns?.title} className="w-14 h-14 rounded-xl object-cover" />
+                        ) : (
+                          <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center"><Megaphone className="w-6 h-6 text-primary" /></div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold text-foreground">{ci.campaigns?.title}</p>
+                            {isUnread && <span className="w-2 h-2 rounded-full bg-destructive" />}
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ms-auto ${
+                              ci.status === "accepted" ? "bg-green-500/15 text-green-500" :
+                              ci.status === "declined" ? "bg-destructive/15 text-destructive" :
+                              "bg-amber-500/15 text-amber-500"
+                            }`}>
+                              {ci.status === "accepted" ? t("پذیرفته شد", "Accepted") :
+                               ci.status === "declined" ? t("رد شد", "Declined") :
+                               t("در انتظار", "Pending")}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{ci.campaigns?.businesses?.name || "-"}</p>
+                          {ci.campaigns?.description && (
+                            <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{ci.campaigns.description}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
+                        {ci.assigned_at && (
+                          <div className="flex items-center gap-1.5 col-span-2 text-[11px]">
+                            <Mail className="w-3 h-3" />
+                            <span>{t("ارسال:", "Sent:")} {new Date(ci.assigned_at).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                        {ci.scheduled_date && (
+                          <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-primary" /><span className="text-foreground">{ci.scheduled_date}</span></div>
+                        )}
+                        {ci.scheduled_time && (
+                          <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-primary" /><span className="text-foreground">{ci.scheduled_time}</span></div>
+                        )}
+                        {ci.location && (
+                          <div className="flex items-center gap-1.5 col-span-2"><MapPin className="w-3.5 h-3.5 text-primary" /><span className="text-foreground truncate">{ci.location}</span></div>
+                        )}
+                      </div>
+                      {ci.note && (
+                        <p className="text-xs text-foreground/80 bg-background/50 rounded-lg p-2 mb-3">{ci.note}</p>
+                      )}
+                      {isPending && (
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={(e) => { e.stopPropagation(); respondInvitation(ci, "accepted"); }} className="flex-1 gap-1.5 rounded-xl gold-gradient text-primary-foreground border-0">
+                            <Check className="w-4 h-4" />{t("قبول", "Accept")}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); respondInvitation(ci, "declined"); }} className="flex-1 gap-1.5 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10">
+                            <X className="w-4 h-4" />{t("رد", "Decline")}
+                          </Button>
+                        </div>
                       )}
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
-                    {ci.scheduled_date && (
-                      <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-primary" /><span className="text-foreground">{ci.scheduled_date}</span></div>
-                    )}
-                    {ci.scheduled_time && (
-                      <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-primary" /><span className="text-foreground">{ci.scheduled_time}</span></div>
-                    )}
-                    {ci.location && (
-                      <div className="flex items-center gap-1.5 col-span-2"><MapPin className="w-3.5 h-3.5 text-primary" /><span className="text-foreground truncate">{ci.location}</span></div>
-                    )}
-                  </div>
-                  {ci.note && (
-                    <p className="text-xs text-foreground/80 bg-background/50 rounded-lg p-2 mb-3">{ci.note}</p>
-                  )}
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => respondInvitation(ci, "accepted")} className="flex-1 gap-1.5 rounded-xl gold-gradient text-primary-foreground border-0">
-                      <Check className="w-4 h-4" />{t("قبول", "Accept")}
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => respondInvitation(ci, "declined")} className="flex-1 gap-1.5 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10">
-                      <X className="w-4 h-4" />{t("رد", "Decline")}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
