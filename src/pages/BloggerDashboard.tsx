@@ -108,10 +108,51 @@ const BloggerDashboard = () => {
     }
 
     toast.success(status === "accepted" ? t("دعوت پذیرفته شد", "Invitation accepted") : t("دعوت رد شد", "Invitation declined"));
-    setInvitations(prev => prev.filter(i => i.id !== ci.id));
+    const respondedAt = new Date().toISOString();
+    // Update invitation in place (don't remove — show in accepted/declined tab)
+    setInvitations(prev => prev.map(i => i.id === ci.id ? { ...i, status, responded_at: respondedAt } : i));
+    // Mark as unread so the response shows up as a new notification
+    const next = new Set(readIds);
+    next.delete(ci.id);
+    persistRead(next);
+    // Switch tab to the one matching the response
+    setInviteTab(status);
     if (status === "accepted") {
       setCampaigns(prev => [...prev, { ...ci, status }]);
     }
+  };
+
+  // Filter + sort invitations for current tab/search/sort
+  const filteredInvitations = useMemo(() => {
+    const q = inviteSearch.trim().toLowerCase();
+    const list = invitations.filter((ci: any) => {
+      if (ci.status !== inviteTab) return false;
+      if (!q) return true;
+      const hay = [
+        ci.campaigns?.title,
+        ci.campaigns?.description,
+        ci.campaigns?.businesses?.name,
+        ci.location,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+    list.sort((a: any, b: any) => {
+      const da = new Date(a.assigned_at || 0).getTime();
+      const db = new Date(b.assigned_at || 0).getTime();
+      return inviteSortDesc ? db - da : da - db;
+    });
+    return list;
+  }, [invitations, inviteTab, inviteSearch, inviteSortDesc]);
+
+  const unreadCount = useMemo(
+    () => invitations.filter((ci: any) => !readIds.has(ci.id)).length,
+    [invitations, readIds]
+  );
+
+  const markAllRead = () => {
+    const next = new Set(readIds);
+    invitations.forEach((ci: any) => next.add(ci.id));
+    persistRead(next);
   };
 
   if (loading || !session) {
