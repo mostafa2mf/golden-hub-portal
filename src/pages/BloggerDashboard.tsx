@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserAuth } from "@/contexts/UserAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import {
   LogOut, User, LayoutDashboard, Megaphone, Calendar, MessageSquare,
-  Edit, Save, Star, TrendingUp, Users, Mail, Check, X, MapPin, Clock
+  Edit, Save, Star, TrendingUp, Users, Mail, Check, X, MapPin, Clock, Search, ArrowUpDown
 } from "lucide-react";
+
+type InviteTab = "pending" | "accepted" | "declined";
 
 const BloggerDashboard = () => {
   const { t, dir } = useLanguage();
@@ -24,6 +27,21 @@ const BloggerDashboard = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ bio: "", city: "" });
   const [loadingData, setLoadingData] = useState(true);
+  const [inviteTab, setInviteTab] = useState<InviteTab>("pending");
+  const [inviteSearch, setInviteSearch] = useState("");
+  const [inviteSortDesc, setInviteSortDesc] = useState(true);
+  const readKey = session ? `blogger_invites_read_${session.entity_id}` : "";
+  const [readIds, setReadIds] = useState<Set<string>>(() => {
+    try {
+      const raw = typeof window !== "undefined" && readKey ? localStorage.getItem(readKey) : null;
+      return new Set<string>(raw ? JSON.parse(raw) : []);
+    } catch { return new Set<string>(); }
+  });
+
+  const persistRead = (next: Set<string>) => {
+    setReadIds(new Set(next));
+    try { if (readKey) localStorage.setItem(readKey, JSON.stringify(Array.from(next))); } catch {}
+  };
 
   useEffect(() => {
     if (!loading && (!session || session.entity_type !== "blogger")) {
@@ -45,8 +63,8 @@ const BloggerDashboard = () => {
       const all = (campaignsRes.data || []);
       // Active campaigns the blogger has accepted
       setCampaigns(all.filter((ci: any) => ci.status === "accepted" && ci.campaigns?.status === "active"));
-      // Pending invitations to show in inbox
-      setInvitations(all.filter((ci: any) => ci.status === "pending"));
+      // Keep ALL invitations (pending/accepted/declined) — UI filters them
+      setInvitations(all);
       setMeetings(meetingsRes.data || []);
       setMessages(messagesRes.data || []);
       if (profileRes.data) setEditForm({ bio: profileRes.data.bio || "", city: profileRes.data.city || "" });
@@ -90,10 +108,51 @@ const BloggerDashboard = () => {
     }
 
     toast.success(status === "accepted" ? t("دعوت پذیرفته شد", "Invitation accepted") : t("دعوت رد شد", "Invitation declined"));
-    setInvitations(prev => prev.filter(i => i.id !== ci.id));
+    const respondedAt = new Date().toISOString();
+    // Update invitation in place (don't remove — show in accepted/declined tab)
+    setInvitations(prev => prev.map(i => i.id === ci.id ? { ...i, status, responded_at: respondedAt } : i));
+    // Mark as unread so the response shows up as a new notification
+    const next = new Set(readIds);
+    next.delete(ci.id);
+    persistRead(next);
+    // Switch tab to the one matching the response
+    setInviteTab(status);
     if (status === "accepted") {
       setCampaigns(prev => [...prev, { ...ci, status }]);
     }
+  };
+
+  // Filter + sort invitations for current tab/search/sort
+  const filteredInvitations = useMemo(() => {
+    const q = inviteSearch.trim().toLowerCase();
+    const list = invitations.filter((ci: any) => {
+      if (ci.status !== inviteTab) return false;
+      if (!q) return true;
+      const hay = [
+        ci.campaigns?.title,
+        ci.campaigns?.description,
+        ci.campaigns?.businesses?.name,
+        ci.location,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+    list.sort((a: any, b: any) => {
+      const da = new Date(a.assigned_at || 0).getTime();
+      const db = new Date(b.assigned_at || 0).getTime();
+      return inviteSortDesc ? db - da : da - db;
+    });
+    return list;
+  }, [invitations, inviteTab, inviteSearch, inviteSortDesc]);
+
+  const unreadCount = useMemo(
+    () => invitations.filter((ci: any) => !readIds.has(ci.id)).length,
+    [invitations, readIds]
+  );
+
+  const markAllRead = () => {
+    const next = new Set(readIds);
+    invitations.forEach((ci: any) => next.add(ci.id));
+    persistRead(next);
   };
 
   if (loading || !session) {
@@ -156,52 +215,158 @@ const BloggerDashboard = () => {
         {/* Invitations Inbox */}
         {invitations.length > 0 && (
           <div className="bg-card/80 border border-primary/40 rounded-2xl p-5">
-            <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Mail className="w-5 h-5 text-primary" />{t("دعوت‌نامه‌های جدید", "New Invitations")}
-              <span className="ms-auto text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground">{invitations.length}</span>
-            </h2>
-            <div className="space-y-3">
-              {invitations.map((ci: any) => (
-                <div key={ci.id} className="p-4 bg-muted/30 rounded-xl border border-border/40">
-                  <div className="flex items-start gap-3 mb-3">
-                    {ci.campaigns?.images?.[0] || ci.campaigns?.businesses?.logo_url ? (
-                      <img src={ci.campaigns.images?.[0] || ci.campaigns.businesses.logo_url} alt={ci.campaigns?.title} className="w-14 h-14 rounded-xl object-cover" />
-                    ) : (
-                      <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center"><Megaphone className="w-6 h-6 text-primary" /></div>
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <Mail className="w-5 h-5 text-primary" />
+              <h2 className="font-semibold text-foreground">{t("دعوت‌نامه‌ها", "Invitations")}</h2>
+              {unreadCount > 0 && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground font-bold animate-pulse">
+                  {unreadCount} {t("جدید", "new")}
+                </span>
+              )}
+              {unreadCount > 0 && (
+                <Button size="sm" variant="ghost" onClick={markAllRead} className="ms-auto h-7 text-xs text-muted-foreground hover:text-primary">
+                  {t("علامت همه به‌عنوان خوانده‌شده", "Mark all read")}
+                </Button>
+              )}
+            </div>
+
+            {/* Filter tabs */}
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              {([
+                { key: "pending", label: t("در انتظار", "Pending") },
+                { key: "accepted", label: t("پذیرفته‌شده", "Accepted") },
+                { key: "declined", label: t("رد شده", "Declined") },
+              ] as { key: InviteTab; label: string }[]).map(tab => {
+                const count = invitations.filter((i: any) => i.status === tab.key).length;
+                const tabUnread = invitations.filter((i: any) => i.status === tab.key && !readIds.has(i.id)).length;
+                const active = inviteTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setInviteTab(tab.key)}
+                    className={`relative text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/30 text-muted-foreground border-border/40 hover:text-foreground"
+                    }`}
+                  >
+                    {tab.label} ({count})
+                    {tabUnread > 0 && !active && (
+                      <span className="absolute -top-1 -end-1 w-2 h-2 rounded-full bg-destructive" />
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground">{ci.campaigns?.title}</p>
-                      <p className="text-xs text-muted-foreground">{ci.campaigns?.businesses?.name || "-"}</p>
-                      {ci.campaigns?.description && (
-                        <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{ci.campaigns.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search + sort */}
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <div className="relative flex-1 min-w-[180px]">
+                <Search className="absolute top-1/2 -translate-y-1/2 start-3 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={inviteSearch}
+                  onChange={e => setInviteSearch(e.target.value)}
+                  placeholder={t("جستجو در عنوان، کسب‌وکار یا مکان…", "Search title, business, location…")}
+                  className="ps-9 h-9 rounded-xl bg-background/50"
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setInviteSortDesc(v => !v)}
+                className="h-9 gap-1.5 rounded-xl text-xs"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                {inviteSortDesc ? t("جدیدترین", "Newest") : t("قدیمی‌ترین", "Oldest")}
+              </Button>
+            </div>
+
+            {filteredInvitations.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {t("موردی یافت نشد", "No invitations found")}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {filteredInvitations.map((ci: any) => {
+                  const isUnread = !readIds.has(ci.id);
+                  const isPending = ci.status === "pending";
+                  return (
+                    <div
+                      key={ci.id}
+                      onClick={() => {
+                        if (isUnread) {
+                          const next = new Set(readIds);
+                          next.add(ci.id);
+                          persistRead(next);
+                        }
+                      }}
+                      className={`p-4 rounded-xl border transition-colors cursor-pointer ${
+                        isUnread
+                          ? "bg-primary/5 border-primary/40"
+                          : "bg-muted/30 border-border/40"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3 mb-3">
+                        {ci.campaigns?.images?.[0] || ci.campaigns?.businesses?.logo_url ? (
+                          <img src={ci.campaigns.images?.[0] || ci.campaigns.businesses.logo_url} alt={ci.campaigns?.title} className="w-14 h-14 rounded-xl object-cover" />
+                        ) : (
+                          <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center"><Megaphone className="w-6 h-6 text-primary" /></div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold text-foreground">{ci.campaigns?.title}</p>
+                            {isUnread && <span className="w-2 h-2 rounded-full bg-destructive" />}
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ms-auto ${
+                              ci.status === "accepted" ? "bg-green-500/15 text-green-500" :
+                              ci.status === "declined" ? "bg-destructive/15 text-destructive" :
+                              "bg-amber-500/15 text-amber-500"
+                            }`}>
+                              {ci.status === "accepted" ? t("پذیرفته شد", "Accepted") :
+                               ci.status === "declined" ? t("رد شد", "Declined") :
+                               t("در انتظار", "Pending")}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{ci.campaigns?.businesses?.name || "-"}</p>
+                          {ci.campaigns?.description && (
+                            <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{ci.campaigns.description}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
+                        {ci.assigned_at && (
+                          <div className="flex items-center gap-1.5 col-span-2 text-[11px]">
+                            <Mail className="w-3 h-3" />
+                            <span>{t("ارسال:", "Sent:")} {new Date(ci.assigned_at).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                        {ci.scheduled_date && (
+                          <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-primary" /><span className="text-foreground">{ci.scheduled_date}</span></div>
+                        )}
+                        {ci.scheduled_time && (
+                          <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-primary" /><span className="text-foreground">{ci.scheduled_time}</span></div>
+                        )}
+                        {ci.location && (
+                          <div className="flex items-center gap-1.5 col-span-2"><MapPin className="w-3.5 h-3.5 text-primary" /><span className="text-foreground truncate">{ci.location}</span></div>
+                        )}
+                      </div>
+                      {ci.note && (
+                        <p className="text-xs text-foreground/80 bg-background/50 rounded-lg p-2 mb-3">{ci.note}</p>
+                      )}
+                      {isPending && (
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={(e) => { e.stopPropagation(); respondInvitation(ci, "accepted"); }} className="flex-1 gap-1.5 rounded-xl gold-gradient text-primary-foreground border-0">
+                            <Check className="w-4 h-4" />{t("قبول", "Accept")}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); respondInvitation(ci, "declined"); }} className="flex-1 gap-1.5 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10">
+                            <X className="w-4 h-4" />{t("رد", "Decline")}
+                          </Button>
+                        </div>
                       )}
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
-                    {ci.scheduled_date && (
-                      <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-primary" /><span className="text-foreground">{ci.scheduled_date}</span></div>
-                    )}
-                    {ci.scheduled_time && (
-                      <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-primary" /><span className="text-foreground">{ci.scheduled_time}</span></div>
-                    )}
-                    {ci.location && (
-                      <div className="flex items-center gap-1.5 col-span-2"><MapPin className="w-3.5 h-3.5 text-primary" /><span className="text-foreground truncate">{ci.location}</span></div>
-                    )}
-                  </div>
-                  {ci.note && (
-                    <p className="text-xs text-foreground/80 bg-background/50 rounded-lg p-2 mb-3">{ci.note}</p>
-                  )}
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => respondInvitation(ci, "accepted")} className="flex-1 gap-1.5 rounded-xl gold-gradient text-primary-foreground border-0">
-                      <Check className="w-4 h-4" />{t("قبول", "Accept")}
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => respondInvitation(ci, "declined")} className="flex-1 gap-1.5 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10">
-                      <X className="w-4 h-4" />{t("رد", "Decline")}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
