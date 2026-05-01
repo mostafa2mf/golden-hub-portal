@@ -63,8 +63,8 @@ const BloggerDashboard = () => {
       const all = (campaignsRes.data || []);
       // Active campaigns the blogger has accepted
       setCampaigns(all.filter((ci: any) => ci.status === "accepted" && ci.campaigns?.status === "active"));
-      // Pending invitations to show in inbox
-      setInvitations(all.filter((ci: any) => ci.status === "pending"));
+      // Keep ALL invitations (pending/accepted/declined) — UI filters them
+      setInvitations(all);
       setMeetings(meetingsRes.data || []);
       setMessages(messagesRes.data || []);
       if (profileRes.data) setEditForm({ bio: profileRes.data.bio || "", city: profileRes.data.city || "" });
