@@ -27,6 +27,21 @@ const BloggerDashboard = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ bio: "", city: "" });
   const [loadingData, setLoadingData] = useState(true);
+  const [inviteTab, setInviteTab] = useState<InviteTab>("pending");
+  const [inviteSearch, setInviteSearch] = useState("");
+  const [inviteSortDesc, setInviteSortDesc] = useState(true);
+  const readKey = session ? `blogger_invites_read_${session.entity_id}` : "";
+  const [readIds, setReadIds] = useState<Set<string>>(() => {
+    try {
+      const raw = typeof window !== "undefined" && readKey ? localStorage.getItem(readKey) : null;
+      return new Set<string>(raw ? JSON.parse(raw) : []);
+    } catch { return new Set<string>(); }
+  });
+
+  const persistRead = (next: Set<string>) => {
+    setReadIds(new Set(next));
+    try { if (readKey) localStorage.setItem(readKey, JSON.stringify(Array.from(next))); } catch {}
+  };
 
   useEffect(() => {
     if (!loading && (!session || session.entity_type !== "blogger")) {
