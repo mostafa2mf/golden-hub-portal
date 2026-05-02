@@ -139,7 +139,7 @@ const ApprovalsPage = () => {
     ) : null
   );
 
-
+  const handleApprove = async (id: string, type: string, name: string) => {
     if (type === "review") {
       const { error } = await supabase.rpc("set_review_status" as any, { _review_id: id, _new_status: "active" as any });
       if (error) toast.error(t("خطا در تأیید", "Error approving"));
