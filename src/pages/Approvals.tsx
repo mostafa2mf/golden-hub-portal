@@ -217,10 +217,19 @@ const ApprovalsPage = () => {
 
         {/* ─── Bloggers Tab ─── */}
         <TabsContent value="bloggers" className="space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute start-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input value={searchBloggers} onChange={e => setSearchBloggers(e.target.value)} placeholder={t("جستجو بلاگر...", "Search bloggers...")} className="w-full bg-card/40 backdrop-blur-xl border border-border/30 rounded-xl ps-11 pe-4 py-3 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground transition-colors" />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative max-w-md flex-1 min-w-[200px]">
+              <Search className="absolute start-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input value={searchBloggers} onChange={e => setSearchBloggers(e.target.value)} placeholder={t("جستجو بلاگر...", "Search bloggers...")} className="w-full bg-card/40 backdrop-blur-xl border border-border/30 rounded-xl ps-11 pe-4 py-3 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground transition-colors" />
+            </div>
+            {pendingInfluencers.length > 0 && (
+              <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setSelBloggers(new Set(selBloggers.size === pendingInfluencers.length ? [] : pendingInfluencers.map((i: any) => i.id)))}>
+                {selBloggers.size === pendingInfluencers.length ? t("لغو انتخاب همه", "Unselect all") : t("انتخاب همه", "Select all")}
+              </Button>
+            )}
           </div>
+          <BulkBar count={selBloggers.size} onClear={() => setSelBloggers(new Set())} onApprove={() => bulkAction([...selBloggers], "influencer", "approve", () => setSelBloggers(new Set()))} onReject={() => bulkAction([...selBloggers], "influencer", "reject", () => setSelBloggers(new Set()))} />
+
 
           {pendingInfluencers.length === 0 ? (
             <div className="bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl p-12 text-center">
