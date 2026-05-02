@@ -13,6 +13,7 @@ import Approvals from "./pages/Approvals.tsx";
 import Businesses from "./pages/Businesses.tsx";
 import Influencers from "./pages/Influencers.tsx";
 import Campaigns from "./pages/Campaigns.tsx";
+import CampaignDetail from "./pages/CampaignDetail.tsx";
 import Meetings from "./pages/Meetings.tsx";
 import Messages from "./pages/Messages.tsx";
 import Analytics from "./pages/Analytics.tsx";
@@ -47,6 +48,7 @@ const App = () => (
                 <Route path="/businesses" element={<ProtectedRoute><Businesses /></ProtectedRoute>} />
                 <Route path="/influencers" element={<ProtectedRoute><Influencers /></ProtectedRoute>} />
                 <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+                <Route path="/campaigns/:id" element={<ProtectedRoute><CampaignDetail /></ProtectedRoute>} />
                 <Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
