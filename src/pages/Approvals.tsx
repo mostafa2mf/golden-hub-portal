@@ -95,7 +95,51 @@ const ApprovalsPage = () => {
     t("عدم تطابق اطلاعات", "Information mismatch"),
   ];
 
-  const handleApprove = async (id: string, type: string, name: string) => {
+  const bulkAction = async (
+    ids: string[],
+    type: "influencer" | "business" | "review",
+    action: "approve" | "reject",
+    clearSel: () => void,
+  ) => {
+    if (!ids.length) return;
+    setBulkBusy(true);
+    try {
+      for (const id of ids) {
+        if (type === "review") {
+          await supabase.rpc("set_review_status" as any, {
+            _review_id: id,
+            _new_status: (action === "approve" ? "active" : "rejected") as any,
+          });
+        } else {
+          await supabase.functions.invoke("notify-approval", {
+            body: { entity_id: id, entity_type: type, action, reject_reason: action === "reject" ? "رد گروهی توسط ادمین" : undefined },
+          });
+        }
+      }
+      toast.success(t(`${ids.length} مورد ${action === "approve" ? "تأیید" : "رد"} شد`, `${ids.length} ${action}d`));
+      clearSel();
+      queryClient.invalidateQueries({ queryKey: ["influencers"] });
+      queryClient.invalidateQueries({ queryKey: ["businesses"] });
+      queryClient.invalidateQueries({ queryKey: ["reviews"] });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const BulkBar = ({ count, onApprove, onReject, onClear }: { count: number; onApprove: () => void; onReject: () => void; onClear: () => void; }) => (
+    count > 0 ? (
+      <div className="flex items-center justify-between gap-3 bg-primary/10 border border-primary/30 rounded-xl px-4 py-2.5">
+        <span className="text-sm font-medium">{t(`${count} مورد انتخاب شد`, `${count} selected`)}</span>
+        <div className="flex gap-2">
+          <Button size="sm" disabled={bulkBusy} onClick={onApprove} className="rounded-lg bg-success/20 hover:bg-success/30 text-success border-0 gap-1"><Check className="w-3.5 h-3.5" />{t("تأیید همه", "Approve all")}</Button>
+          <Button size="sm" disabled={bulkBusy} onClick={onReject} variant="destructive" className="rounded-lg gap-1"><X className="w-3.5 h-3.5" />{t("رد همه", "Reject all")}</Button>
+          <Button size="sm" variant="ghost" onClick={onClear} className="rounded-lg">{t("لغو", "Clear")}</Button>
+        </div>
+      </div>
+    ) : null
+  );
+
+
     if (type === "review") {
       const { error } = await supabase.rpc("set_review_status" as any, { _review_id: id, _new_status: "active" as any });
       if (error) toast.error(t("خطا در تأیید", "Error approving"));
