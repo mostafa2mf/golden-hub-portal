@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -15,9 +16,11 @@ import { SendCampaignModal } from "@/components/admin/SendCampaignModal";
 import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
+import { campaignSchema, validateOrToast } from "@/lib/validations";
 
 const CampaignsPage = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [detail, setDetail] = useState<any>(null);
   const [addModal, setAddModal] = useState(false);
@@ -141,10 +144,8 @@ const CampaignsPage = () => {
   };
 
   const handleAdd = async () => {
-    if (!addForm.title.trim()) {
-      toast.error(t("عنوان کمپین الزامی است", "Title is required"));
-      return;
-    }
+    const v = validateOrToast(campaignSchema, addForm);
+    if (!v) return;
 
     const businessId = await ensureBusiness();
     if (!businessId) return;
@@ -213,7 +214,7 @@ const CampaignsPage = () => {
           <TabsContent key={s} value={s}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {campaigns.filter((c: any) => c.status === s).map((camp: any) => (
-                <div key={camp.id} className="glass-card overflow-hidden hover-glow cursor-pointer transition-all hover:scale-[1.02] group" onClick={() => setDetail(camp)}>
+                <div key={camp.id} className="glass-card overflow-hidden hover-glow cursor-pointer transition-all hover:scale-[1.02] group" onClick={() => navigate(`/campaigns/${camp.id}`)}>
                   <div className="h-36 bg-gradient-to-br from-primary/10 via-primary/5 to-card relative flex items-center justify-center">
                     {coverImage(camp) ? (
                       <img src={coverImage(camp)} alt={camp.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />

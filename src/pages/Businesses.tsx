@@ -10,6 +10,7 @@ import { exportToCSV } from "@/utils/csvExport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { businessSchema, validateOrToast } from "@/lib/validations";
 
 const BusinessesPage = () => {
   const { t } = useLanguage();
@@ -33,14 +34,15 @@ const BusinessesPage = () => {
   const filtered = businesses.filter((b: any) => !search || b.name.includes(search) || (b.categories?.name || "").includes(search));
 
   const handleAdd = async () => {
-    if (!addForm.name.trim()) { toast.error(t("نام الزامی است", "Name is required")); return; }
+    const v = validateOrToast(businessSchema, addForm);
+    if (!v) return;
     const { data: inserted, error } = await supabase.from("businesses").insert({
-      name: addForm.name,
-      city: addForm.city || null,
-      contact_name: addForm.contact || null,
-      phone: addForm.phone || null,
-      email: addForm.email || null,
-      description: addForm.description || null,
+      name: v.name,
+      city: v.city || null,
+      contact_name: v.contact || null,
+      phone: v.phone || null,
+      email: v.email || null,
+      description: v.description || null,
       status: "pending",
     }).select().single();
     if (error) { toast.error(error.message); return; }

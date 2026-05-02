@@ -31,6 +31,16 @@ const ApprovalsPage = () => {
   const [searchBloggers, setSearchBloggers] = useState("");
   const [searchBusinesses, setSearchBusinesses] = useState("");
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
+  const [selBloggers, setSelBloggers] = useState<Set<string>>(new Set());
+  const [selBusinesses, setSelBusinesses] = useState<Set<string>>(new Set());
+  const [selReviews, setSelReviews] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  const toggleSel = (set: Set<string>, setter: (s: Set<string>) => void, id: string) => {
+    const next = new Set(set);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setter(next);
+  };
 
   const { data: influencers = [] } = useQuery({
     queryKey: ["influencers"],
@@ -84,6 +94,50 @@ const ApprovalsPage = () => {
     t("حساب تکراری", "Duplicate account"),
     t("عدم تطابق اطلاعات", "Information mismatch"),
   ];
+
+  const bulkAction = async (
+    ids: string[],
+    type: "influencer" | "business" | "review",
+    action: "approve" | "reject",
+    clearSel: () => void,
+  ) => {
+    if (!ids.length) return;
+    setBulkBusy(true);
+    try {
+      for (const id of ids) {
+        if (type === "review") {
+          await supabase.rpc("set_review_status" as any, {
+            _review_id: id,
+            _new_status: (action === "approve" ? "active" : "rejected") as any,
+          });
+        } else {
+          await supabase.functions.invoke("notify-approval", {
+            body: { entity_id: id, entity_type: type, action, reject_reason: action === "reject" ? "رد گروهی توسط ادمین" : undefined },
+          });
+        }
+      }
+      toast.success(t(`${ids.length} مورد ${action === "approve" ? "تأیید" : "رد"} شد`, `${ids.length} ${action}d`));
+      clearSel();
+      queryClient.invalidateQueries({ queryKey: ["influencers"] });
+      queryClient.invalidateQueries({ queryKey: ["businesses"] });
+      queryClient.invalidateQueries({ queryKey: ["reviews"] });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const BulkBar = ({ count, onApprove, onReject, onClear }: { count: number; onApprove: () => void; onReject: () => void; onClear: () => void; }) => (
+    count > 0 ? (
+      <div className="flex items-center justify-between gap-3 bg-primary/10 border border-primary/30 rounded-xl px-4 py-2.5">
+        <span className="text-sm font-medium">{t(`${count} مورد انتخاب شد`, `${count} selected`)}</span>
+        <div className="flex gap-2">
+          <Button size="sm" disabled={bulkBusy} onClick={onApprove} className="rounded-lg bg-success/20 hover:bg-success/30 text-success border-0 gap-1"><Check className="w-3.5 h-3.5" />{t("تأیید همه", "Approve all")}</Button>
+          <Button size="sm" disabled={bulkBusy} onClick={onReject} variant="destructive" className="rounded-lg gap-1"><X className="w-3.5 h-3.5" />{t("رد همه", "Reject all")}</Button>
+          <Button size="sm" variant="ghost" onClick={onClear} className="rounded-lg">{t("لغو", "Clear")}</Button>
+        </div>
+      </div>
+    ) : null
+  );
 
   const handleApprove = async (id: string, type: string, name: string) => {
     if (type === "review") {
@@ -163,10 +217,19 @@ const ApprovalsPage = () => {
 
         {/* ─── Bloggers Tab ─── */}
         <TabsContent value="bloggers" className="space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute start-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input value={searchBloggers} onChange={e => setSearchBloggers(e.target.value)} placeholder={t("جستجو بلاگر...", "Search bloggers...")} className="w-full bg-card/40 backdrop-blur-xl border border-border/30 rounded-xl ps-11 pe-4 py-3 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground transition-colors" />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative max-w-md flex-1 min-w-[200px]">
+              <Search className="absolute start-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input value={searchBloggers} onChange={e => setSearchBloggers(e.target.value)} placeholder={t("جستجو بلاگر...", "Search bloggers...")} className="w-full bg-card/40 backdrop-blur-xl border border-border/30 rounded-xl ps-11 pe-4 py-3 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground transition-colors" />
+            </div>
+            {pendingInfluencers.length > 0 && (
+              <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setSelBloggers(new Set(selBloggers.size === pendingInfluencers.length ? [] : pendingInfluencers.map((i: any) => i.id)))}>
+                {selBloggers.size === pendingInfluencers.length ? t("لغو انتخاب همه", "Unselect all") : t("انتخاب همه", "Select all")}
+              </Button>
+            )}
           </div>
+          <BulkBar count={selBloggers.size} onClear={() => setSelBloggers(new Set())} onApprove={() => bulkAction([...selBloggers], "influencer", "approve", () => setSelBloggers(new Set()))} onReject={() => bulkAction([...selBloggers], "influencer", "reject", () => setSelBloggers(new Set()))} />
+
 
           {pendingInfluencers.length === 0 ? (
             <div className="bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl p-12 text-center">
@@ -180,7 +243,10 @@ const ApprovalsPage = () => {
                 const handleClean = (inf.handle || "").replace(/^@/, "");
                 const igUrl = handleClean ? `https://instagram.com/${handleClean}` : null;
                 return (
-                <div key={inf.id} className="group bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-[var(--gold-glow)] transition-all duration-300">
+                <div key={inf.id} className={`relative group bg-card/40 backdrop-blur-xl border rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-[var(--gold-glow)] transition-all duration-300 ${selBloggers.has(inf.id) ? "border-primary ring-2 ring-primary/40" : "border-border/20"}`}>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleSel(selBloggers, setSelBloggers, inf.id); }} className={`absolute top-2 start-2 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selBloggers.has(inf.id) ? "bg-primary border-primary text-primary-foreground" : "bg-card/80 border-border/50 hover:border-primary"}`}>
+                    {selBloggers.has(inf.id) && <Check className="w-3.5 h-3.5" />}
+                  </button>
                   {/* Cover with avatar */}
                   <div className="relative h-32 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent overflow-hidden">
                     {inf.avatar_url && <img src={inf.avatar_url} className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110" alt="" />}
@@ -241,10 +307,19 @@ const ApprovalsPage = () => {
 
         {/* ─── Businesses Tab ─── */}
         <TabsContent value="businesses" className="space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute start-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input value={searchBusinesses} onChange={e => setSearchBusinesses(e.target.value)} placeholder={t("جستجو کسب‌وکار...", "Search businesses...")} className="w-full bg-card/40 backdrop-blur-xl border border-border/30 rounded-xl ps-11 pe-4 py-3 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground transition-colors" />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative max-w-md flex-1 min-w-[200px]">
+              <Search className="absolute start-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input value={searchBusinesses} onChange={e => setSearchBusinesses(e.target.value)} placeholder={t("جستجو کسب‌وکار...", "Search businesses...")} className="w-full bg-card/40 backdrop-blur-xl border border-border/30 rounded-xl ps-11 pe-4 py-3 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground transition-colors" />
+            </div>
+            {pendingBusinesses.length > 0 && (
+              <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setSelBusinesses(new Set(selBusinesses.size === pendingBusinesses.length ? [] : pendingBusinesses.map((b: any) => b.id)))}>
+                {selBusinesses.size === pendingBusinesses.length ? t("لغو انتخاب همه", "Unselect all") : t("انتخاب همه", "Select all")}
+              </Button>
+            )}
           </div>
+          <BulkBar count={selBusinesses.size} onClear={() => setSelBusinesses(new Set())} onApprove={() => bulkAction([...selBusinesses], "business", "approve", () => setSelBusinesses(new Set()))} onReject={() => bulkAction([...selBusinesses], "business", "reject", () => setSelBusinesses(new Set()))} />
+
 
           {pendingBusinesses.length === 0 ? (
             <div className="bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl p-12 text-center">
@@ -255,7 +330,10 @@ const ApprovalsPage = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {pendingBusinesses.map((biz: any) => (
-                <div key={biz.id} className="group bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-[var(--gold-glow)] transition-all duration-300">
+                <div key={biz.id} className={`relative group bg-card/40 backdrop-blur-xl border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-[var(--gold-glow)] transition-all duration-300 ${selBusinesses.has(biz.id) ? "border-primary ring-2 ring-primary/40" : "border-border/20"}`}>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleSel(selBusinesses, setSelBusinesses, biz.id); }} className={`absolute top-2 start-2 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selBusinesses.has(biz.id) ? "bg-primary border-primary text-primary-foreground" : "bg-card/80 border-border/50 hover:border-primary"}`}>
+                    {selBusinesses.has(biz.id) && <Check className="w-3.5 h-3.5" />}
+                  </button>
                   <div className="h-28 bg-gradient-to-br from-info/10 via-info/5 to-transparent flex items-center justify-center">
                     {biz.logo_url ? (
                       <img src={biz.logo_url} alt={biz.name} className="w-20 h-20 rounded-2xl object-cover ring-3 ring-card shadow-lg" />
@@ -288,6 +366,16 @@ const ApprovalsPage = () => {
 
         {/* ─── Reviews Tab ─── */}
         <TabsContent value="reviews" className="space-y-4">
+          {reviews.length > 0 && (
+            <>
+              <div className="flex justify-end">
+                <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setSelReviews(new Set(selReviews.size === reviews.length ? [] : reviews.map((r: any) => r.id)))}>
+                  {selReviews.size === reviews.length ? t("لغو انتخاب همه", "Unselect all") : t("انتخاب همه", "Select all")}
+                </Button>
+              </div>
+              <BulkBar count={selReviews.size} onClear={() => setSelReviews(new Set())} onApprove={() => bulkAction([...selReviews], "review", "approve", () => setSelReviews(new Set()))} onReject={() => bulkAction([...selReviews], "review", "reject", () => setSelReviews(new Set()))} />
+            </>
+          )}
           {reviews.length === 0 ? (
             <div className="bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl p-12 text-center">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 mx-auto mb-4 flex items-center justify-center"><Star className="w-8 h-8 text-primary" /></div>
@@ -297,7 +385,10 @@ const ApprovalsPage = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {reviews.map((rev: any) => (
-                <div key={rev.id} className="group bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-[var(--gold-glow)] transition-all duration-300 cursor-pointer" onClick={() => setReviewDetailModal(rev)}>
+                <div key={rev.id} className={`relative group bg-card/40 backdrop-blur-xl border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-[var(--gold-glow)] transition-all duration-300 cursor-pointer ${selReviews.has(rev.id) ? "border-primary ring-2 ring-primary/40" : "border-border/20"}`} onClick={() => setReviewDetailModal(rev)}>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleSel(selReviews, setSelReviews, rev.id); }} className={`absolute top-2 start-2 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selReviews.has(rev.id) ? "bg-primary border-primary text-primary-foreground" : "bg-card/80 border-border/50 hover:border-primary"}`}>
+                    {selReviews.has(rev.id) && <Check className="w-3.5 h-3.5" />}
+                  </button>
                   {/* Media preview */}
                   <div className="aspect-square bg-gradient-to-br from-warning/10 via-warning/5 to-transparent relative flex items-center justify-center">
                     {rev.media_urls && rev.media_urls.length > 0 ? (
