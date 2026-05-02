@@ -307,10 +307,19 @@ const ApprovalsPage = () => {
 
         {/* ─── Businesses Tab ─── */}
         <TabsContent value="businesses" className="space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute start-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input value={searchBusinesses} onChange={e => setSearchBusinesses(e.target.value)} placeholder={t("جستجو کسب‌وکار...", "Search businesses...")} className="w-full bg-card/40 backdrop-blur-xl border border-border/30 rounded-xl ps-11 pe-4 py-3 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground transition-colors" />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative max-w-md flex-1 min-w-[200px]">
+              <Search className="absolute start-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input value={searchBusinesses} onChange={e => setSearchBusinesses(e.target.value)} placeholder={t("جستجو کسب‌وکار...", "Search businesses...")} className="w-full bg-card/40 backdrop-blur-xl border border-border/30 rounded-xl ps-11 pe-4 py-3 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground transition-colors" />
+            </div>
+            {pendingBusinesses.length > 0 && (
+              <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setSelBusinesses(new Set(selBusinesses.size === pendingBusinesses.length ? [] : pendingBusinesses.map((b: any) => b.id)))}>
+                {selBusinesses.size === pendingBusinesses.length ? t("لغو انتخاب همه", "Unselect all") : t("انتخاب همه", "Select all")}
+              </Button>
+            )}
           </div>
+          <BulkBar count={selBusinesses.size} onClear={() => setSelBusinesses(new Set())} onApprove={() => bulkAction([...selBusinesses], "business", "approve", () => setSelBusinesses(new Set()))} onReject={() => bulkAction([...selBusinesses], "business", "reject", () => setSelBusinesses(new Set()))} />
+
 
           {pendingBusinesses.length === 0 ? (
             <div className="bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl p-12 text-center">
@@ -321,7 +330,10 @@ const ApprovalsPage = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {pendingBusinesses.map((biz: any) => (
-                <div key={biz.id} className="group bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-[var(--gold-glow)] transition-all duration-300">
+                <div key={biz.id} className={`relative group bg-card/40 backdrop-blur-xl border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-[var(--gold-glow)] transition-all duration-300 ${selBusinesses.has(biz.id) ? "border-primary ring-2 ring-primary/40" : "border-border/20"}`}>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleSel(selBusinesses, setSelBusinesses, biz.id); }} className={`absolute top-2 start-2 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selBusinesses.has(biz.id) ? "bg-primary border-primary text-primary-foreground" : "bg-card/80 border-border/50 hover:border-primary"}`}>
+                    {selBusinesses.has(biz.id) && <Check className="w-3.5 h-3.5" />}
+                  </button>
                   <div className="h-28 bg-gradient-to-br from-info/10 via-info/5 to-transparent flex items-center justify-center">
                     {biz.logo_url ? (
                       <img src={biz.logo_url} alt={biz.name} className="w-20 h-20 rounded-2xl object-cover ring-3 ring-card shadow-lg" />
