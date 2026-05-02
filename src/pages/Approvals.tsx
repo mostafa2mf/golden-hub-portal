@@ -31,6 +31,16 @@ const ApprovalsPage = () => {
   const [searchBloggers, setSearchBloggers] = useState("");
   const [searchBusinesses, setSearchBusinesses] = useState("");
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
+  const [selBloggers, setSelBloggers] = useState<Set<string>>(new Set());
+  const [selBusinesses, setSelBusinesses] = useState<Set<string>>(new Set());
+  const [selReviews, setSelReviews] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  const toggleSel = (set: Set<string>, setter: (s: Set<string>) => void, id: string) => {
+    const next = new Set(set);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setter(next);
+  };
 
   const { data: influencers = [] } = useQuery({
     queryKey: ["influencers"],
