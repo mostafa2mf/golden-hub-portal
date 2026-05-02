@@ -243,7 +243,10 @@ const ApprovalsPage = () => {
                 const handleClean = (inf.handle || "").replace(/^@/, "");
                 const igUrl = handleClean ? `https://instagram.com/${handleClean}` : null;
                 return (
-                <div key={inf.id} className="group bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-[var(--gold-glow)] transition-all duration-300">
+                <div key={inf.id} className={`group bg-card/40 backdrop-blur-xl border rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-[var(--gold-glow)] transition-all duration-300 ${selBloggers.has(inf.id) ? "border-primary ring-2 ring-primary/40" : "border-border/20"}`}>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleSel(selBloggers, setSelBloggers, inf.id); }} className={`absolute top-2 start-2 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selBloggers.has(inf.id) ? "bg-primary border-primary text-primary-foreground" : "bg-card/80 border-border/50 hover:border-primary"}`}>
+                    {selBloggers.has(inf.id) && <Check className="w-3.5 h-3.5" />}
+                  </button>
                   {/* Cover with avatar */}
                   <div className="relative h-32 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent overflow-hidden">
                     {inf.avatar_url && <img src={inf.avatar_url} className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110" alt="" />}
