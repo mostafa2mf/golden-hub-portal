@@ -366,6 +366,16 @@ const ApprovalsPage = () => {
 
         {/* ─── Reviews Tab ─── */}
         <TabsContent value="reviews" className="space-y-4">
+          {reviews.length > 0 && (
+            <>
+              <div className="flex justify-end">
+                <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setSelReviews(new Set(selReviews.size === reviews.length ? [] : reviews.map((r: any) => r.id)))}>
+                  {selReviews.size === reviews.length ? t("لغو انتخاب همه", "Unselect all") : t("انتخاب همه", "Select all")}
+                </Button>
+              </div>
+              <BulkBar count={selReviews.size} onClear={() => setSelReviews(new Set())} onApprove={() => bulkAction([...selReviews], "review", "approve", () => setSelReviews(new Set()))} onReject={() => bulkAction([...selReviews], "review", "reject", () => setSelReviews(new Set()))} />
+            </>
+          )}
           {reviews.length === 0 ? (
             <div className="bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl p-12 text-center">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 mx-auto mb-4 flex items-center justify-center"><Star className="w-8 h-8 text-primary" /></div>
@@ -375,7 +385,10 @@ const ApprovalsPage = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {reviews.map((rev: any) => (
-                <div key={rev.id} className="group bg-card/40 backdrop-blur-xl border border-border/20 rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-[var(--gold-glow)] transition-all duration-300 cursor-pointer" onClick={() => setReviewDetailModal(rev)}>
+                <div key={rev.id} className={`relative group bg-card/40 backdrop-blur-xl border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-[var(--gold-glow)] transition-all duration-300 cursor-pointer ${selReviews.has(rev.id) ? "border-primary ring-2 ring-primary/40" : "border-border/20"}`} onClick={() => setReviewDetailModal(rev)}>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleSel(selReviews, setSelReviews, rev.id); }} className={`absolute top-2 start-2 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selReviews.has(rev.id) ? "bg-primary border-primary text-primary-foreground" : "bg-card/80 border-border/50 hover:border-primary"}`}>
+                    {selReviews.has(rev.id) && <Check className="w-3.5 h-3.5" />}
+                  </button>
                   {/* Media preview */}
                   <div className="aspect-square bg-gradient-to-br from-warning/10 via-warning/5 to-transparent relative flex items-center justify-center">
                     {rev.media_urls && rev.media_urls.length > 0 ? (
