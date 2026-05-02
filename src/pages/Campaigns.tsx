@@ -15,6 +15,7 @@ import { SendCampaignModal } from "@/components/admin/SendCampaignModal";
 import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
+import { campaignSchema, validateOrToast } from "@/lib/validations";
 
 const CampaignsPage = () => {
   const { t } = useLanguage();
@@ -141,10 +142,8 @@ const CampaignsPage = () => {
   };
 
   const handleAdd = async () => {
-    if (!addForm.title.trim()) {
-      toast.error(t("عنوان کمپین الزامی است", "Title is required"));
-      return;
-    }
+    const v = validateOrToast(campaignSchema, addForm);
+    if (!v) return;
 
     const businessId = await ensureBusiness();
     if (!businessId) return;

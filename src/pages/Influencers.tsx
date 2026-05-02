@@ -10,6 +10,7 @@ import { exportToCSV } from "@/utils/csvExport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { influencerSchema, validateOrToast } from "@/lib/validations";
 
 const InfluencersPage = () => {
   const { t } = useLanguage();
@@ -56,12 +57,13 @@ const InfluencersPage = () => {
   };
 
   const handleAdd = async () => {
-    if (!addForm.name.trim()) { toast.error(t("نام الزامی است", "Name is required")); return; }
+    const v = validateOrToast(influencerSchema, addForm);
+    if (!v) return;
     const { data: inserted, error } = await supabase.from("influencers").insert({
-      name: addForm.name,
-      handle: addForm.handle || null,
-      city: addForm.city || null,
-      bio: addForm.bio || null,
+      name: v.name,
+      handle: v.handle ? v.handle.replace(/^@/, "") : null,
+      city: v.city || null,
+      bio: v.bio || null,
       status: "pending",
     }).select().single();
     if (error) { toast.error(error.message); return; }
