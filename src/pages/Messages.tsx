@@ -272,7 +272,7 @@ const MessagesPage = () => {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto scrollbar-thin">
-              {filteredInfluencers.length === 0 && (
+              {filteredInfluencers.length === 0 && fuzzyMatches.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">{t("بلاگری یافت نشد", "No bloggers found")}</p>
               )}
               {filteredInfluencers.map((inf: any) => (
@@ -290,6 +290,28 @@ const MessagesPage = () => {
                   </div>
                 </button>
               ))}
+              {filteredInfluencers.length === 0 && fuzzyMatches.length > 0 && (
+                <>
+                  <div className="px-3 pt-4 pb-2 text-[11px] uppercase tracking-wide text-muted-foreground/70">
+                    {t("نتیجه دقیقی نبود — پیشنهادها", "No exact match — suggestions")}
+                  </div>
+                  {fuzzyMatches.slice(0, 8).map((inf: any) => (
+                    <button
+                      key={inf.id}
+                      onClick={() => startChatWithInfluencer(inf)}
+                      className="w-full flex items-center gap-3 p-3 hover:bg-muted/20 transition-all border-b border-border/10 text-start opacity-80"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center text-primary font-bold text-sm">
+                        {inf.avatar_url ? <img src={inf.avatar_url} alt={inf.name} className="w-full h-full rounded-xl object-cover" /> : inf.name?.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-foreground truncate">{inf.name}</div>
+                        {inf.handle && <div className="text-xs text-muted-foreground truncate">@{inf.handle}</div>}
+                      </div>
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           </div>
         </div>
