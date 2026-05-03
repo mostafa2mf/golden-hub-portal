@@ -240,6 +240,14 @@ const BusinessDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <CampaignFormModal
+        open={addCampaignOpen}
+        onOpenChange={setAddCampaignOpen}
+        mode="business"
+        businessId={session.entity_id}
+        onCreated={() => setRefreshTick(t => t + 1)}
+      />
     </div>
   );
 };
