@@ -182,10 +182,17 @@ const BusinessesPage = () => {
                 <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("همکاری تکمیل‌شده", "Completed")}</span><div className="font-medium mt-1">{detail.completed_collabs}</div></div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" className="gap-2 rounded-xl"><MessageSquare className="w-4 h-4" />{t("پیام", "Message")}</Button>
-                <Button variant="outline" className="gap-2 rounded-xl"><Edit className="w-4 h-4" />{t("ویرایش", "Edit")}</Button>
-                <Button className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0"><CheckCircle className="w-4 h-4" />{t("تأیید", "Verify")}</Button>
-                <Button variant="destructive" className="gap-2 rounded-xl" onClick={() => { setDetail(null); setConfirmDialog({ type: "deactivate", id: detail.id, name: detail.name }); }}><Ban className="w-4 h-4" />{t("غیرفعال", "Deactivate")}</Button>
+                {!detail.is_deleted ? (
+                  <>
+                    <Button variant="outline" className="gap-2 rounded-xl"><MessageSquare className="w-4 h-4" />{t("پیام", "Message")}</Button>
+                    <Button variant="outline" className="gap-2 rounded-xl"><Edit className="w-4 h-4" />{t("ویرایش", "Edit")}</Button>
+                    <Button className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0"><CheckCircle className="w-4 h-4" />{t("تأیید", "Verify")}</Button>
+                    <Button variant="outline" className="gap-2 rounded-xl" onClick={() => { setDetail(null); setConfirmDialog({ type: "deactivate", id: detail.id, name: detail.name }); }}><Ban className="w-4 h-4" />{t("غیرفعال", "Deactivate")}</Button>
+                    <Button variant="destructive" className="gap-2 rounded-xl" onClick={() => { setDetail(null); setConfirmDialog({ type: "delete", id: detail.id, name: detail.name }); }}><Trash2 className="w-4 h-4" />{t("حذف", "Delete")}</Button>
+                  </>
+                ) : (
+                  <Button className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0" onClick={() => handleRestore(detail.id, detail.name)}><RotateCcw className="w-4 h-4" />{t("بازگردانی", "Restore")}</Button>
+                )}
               </div>
             </div>
           )}
