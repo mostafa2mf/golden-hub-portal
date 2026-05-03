@@ -32,7 +32,33 @@ const BusinessesPage = () => {
 
   useRealtimeInvalidation("businesses", ["businesses"]);
 
-  const filtered = businesses.filter((b: any) => !search || b.name.includes(search) || (b.categories?.name || "").includes(search));
+  const filtered = businesses.filter((b: any) => {
+    if (statusTab === "deleted") { if (!b.is_deleted) return false; }
+    else { if (b.is_deleted) return false; if (statusTab === "pending" && b.status !== "pending") return false; if (statusTab === "active" && b.status !== "active") return false; }
+    if (search && !b.name.includes(search) && !(b.categories?.name || "").includes(search)) return false;
+    return true;
+  });
+
+  const counts = {
+    all: businesses.filter((b: any) => !b.is_deleted).length,
+    pending: businesses.filter((b: any) => !b.is_deleted && b.status === "pending").length,
+    active: businesses.filter((b: any) => !b.is_deleted && b.status === "active").length,
+    deleted: businesses.filter((b: any) => b.is_deleted).length,
+  };
+
+  const handleSoftDelete = async (id: string, name: string) => {
+    await supabase.from("businesses").update({ is_deleted: true, status: "suspended" }).eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["businesses"] });
+    toast.success(t(`${name} حذف شد`, `${name} deleted`));
+    setDetail(null); setConfirmDialog(null);
+  };
+
+  const handleRestore = async (id: string, name: string) => {
+    await supabase.from("businesses").update({ is_deleted: false, status: "pending" }).eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["businesses"] });
+    toast.success(t(`${name} بازگردانی شد`, `${name} restored`));
+    setDetail(null);
+  };
 
   const handleAdd = async () => {
     const v = validateOrToast(businessSchema, addForm);
