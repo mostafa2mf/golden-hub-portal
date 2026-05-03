@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Eye, Edit, Ban, MessageSquare, CheckCircle, Star, Plus, Image as ImageIcon, Download } from "lucide-react";
+import { Search, Eye, Edit, Ban, MessageSquare, CheckCircle, Star, Plus, Image as ImageIcon, Download, Trash2, RotateCcw } from "lucide-react";
 import { exportToCSV } from "@/utils/csvExport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
