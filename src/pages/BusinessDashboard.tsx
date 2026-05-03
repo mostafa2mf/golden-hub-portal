@@ -269,6 +269,35 @@ const BusinessDashboard = () => {
         businessId={session.entity_id}
         onCreated={() => setRefreshTick(t => t + 1)}
       />
+
+      {/* Blogger picker (when campaign has multiple accepted bloggers) */}
+      <Dialog open={!!pickerCampaign} onOpenChange={() => setPickerCampaign(null)}>
+        <DialogContent className="bg-card border-border/50 rounded-2xl max-w-sm">
+          <DialogHeader><DialogTitle>{t("انتخاب بلاگر برای چت", "Select blogger to chat")}</DialogTitle></DialogHeader>
+          <div className="space-y-2 max-h-72 overflow-y-auto">
+            {pickerCampaign?._bloggers?.map((b: any) => (
+              <button
+                key={b.id}
+                onClick={() => { setChatBlogger(b); setPickerCampaign(null); }}
+                className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-muted/30 hover:bg-muted/50 transition-all text-start"
+              >
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-bold text-sm">
+                  {b.avatar_url ? <img src={b.avatar_url} alt={b.name} className="w-full h-full rounded-xl object-cover" /> : b.name?.charAt(0)}
+                </div>
+                <span className="text-sm font-medium">{b.name}</span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <BloggerChatDialog
+        open={!!chatBlogger}
+        onOpenChange={(v) => !v && setChatBlogger(null)}
+        businessId={session.entity_id}
+        businessName={session.name}
+        blogger={chatBlogger}
+      />
     </div>
   );
 };
