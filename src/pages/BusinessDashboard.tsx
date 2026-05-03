@@ -148,18 +148,36 @@ const BusinessDashboard = () => {
             <p className="text-sm text-muted-foreground text-center py-6">{t("هنوز کمپینی ندارید", "No campaigns yet")}</p>
           ) : (
             <div className="space-y-3">
-              {campaigns.map((c: any) => (
-                <div key={c.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
-                  {c.images?.[0] && (
-                    <img src={c.images[0]} alt={c.title} className="w-12 h-12 rounded-lg object-cover" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{c.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">{c.city || "-"}{c.address ? ` • ${c.address}` : ""}</p>
+              {campaigns.map((c: any) => {
+                const acceptedBloggers = (c.campaign_influencers || [])
+                  .filter((ci: any) => ci.status === "accepted" && ci.influencers)
+                  .map((ci: any) => ci.influencers);
+                return (
+                  <div key={c.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                    {c.images?.[0] && (
+                      <img src={c.images[0]} alt={c.title} className="w-12 h-12 rounded-lg object-cover" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{c.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{c.city || "-"}{c.address ? ` • ${c.address}` : ""}</p>
+                    </div>
+                    {acceptedBloggers.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 rounded-xl border-primary/40 text-primary hover:bg-primary/10"
+                        onClick={() => {
+                          if (acceptedBloggers.length === 1) setChatBlogger(acceptedBloggers[0]);
+                          else setPickerCampaign({ ...c, _bloggers: acceptedBloggers });
+                        }}
+                      >
+                        <MessageCircle className="w-4 h-4" />{t("شروع چت", "Chat")}
+                      </Button>
+                    )}
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">{t("فعال", "Active")}</span>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">{t("فعال", "Active")}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
