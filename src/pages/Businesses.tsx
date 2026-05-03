@@ -231,10 +231,24 @@ const BusinessesPage = () => {
       <Dialog open={!!confirmDialog} onOpenChange={() => setConfirmDialog(null)}>
         <DialogContent className="bg-card border-border/50 rounded-2xl max-w-sm">
           <DialogHeader><DialogTitle>{t("تأیید عملیات", "Confirm Action")}</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">{t(`آیا مطمئن هستید که می‌خواهید ${confirmDialog?.name} را غیرفعال کنید؟`, `Are you sure you want to deactivate ${confirmDialog?.name}?`)}</p>
+          <p className="text-sm text-muted-foreground">
+            {confirmDialog?.type === "delete"
+              ? t(`آیا مطمئن هستید که می‌خواهید ${confirmDialog?.name} را حذف کنید؟ (قابل بازگردانی)`, `Delete ${confirmDialog?.name}? (can be restored)`)
+              : t(`آیا مطمئن هستید که می‌خواهید ${confirmDialog?.name} را غیرفعال کنید؟`, `Deactivate ${confirmDialog?.name}?`)}
+          </p>
           <div className="flex gap-2 justify-end">
             <Button variant="ghost" onClick={() => setConfirmDialog(null)}>{t("انصراف", "Cancel")}</Button>
-            <Button variant="destructive" onClick={async () => { if (confirmDialog) { await supabase.from("businesses").update({ status: "suspended" }).eq("id", confirmDialog.id); queryClient.invalidateQueries({ queryKey: ["businesses"] }); toast.success(t("غیرفعال شد", "Deactivated")); setConfirmDialog(null); } }}>{t("غیرفعال", "Deactivate")}</Button>
+            <Button variant="destructive" onClick={async () => {
+              if (!confirmDialog) return;
+              if (confirmDialog.type === "delete") {
+                await handleSoftDelete(confirmDialog.id, confirmDialog.name);
+              } else {
+                await supabase.from("businesses").update({ status: "suspended" }).eq("id", confirmDialog.id);
+                queryClient.invalidateQueries({ queryKey: ["businesses"] });
+                toast.success(t("غیرفعال شد", "Deactivated"));
+                setConfirmDialog(null);
+              }
+            }}>{confirmDialog?.type === "delete" ? t("حذف", "Delete") : t("غیرفعال", "Deactivate")}</Button>
           </div>
         </DialogContent>
       </Dialog>
