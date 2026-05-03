@@ -24,6 +24,8 @@ const BusinessDashboard = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ description: "", city: "", phone: "", email: "" });
   const [loadingData, setLoadingData] = useState(true);
+  const [addCampaignOpen, setAddCampaignOpen] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     if (!loading && (!session || session.entity_type !== "business")) {
