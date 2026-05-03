@@ -36,11 +36,19 @@ const InfluencersPage = () => {
 
   const cities = [...new Set(influencers.map((i: any) => i.city).filter(Boolean))];
   const filtered = influencers.filter((i: any) => {
+    if (statusTab === "deleted") { if (!i.is_deleted) return false; }
+    else { if (i.is_deleted) return false; if (statusTab === "pending" && i.status !== "pending") return false; if (statusTab === "active" && i.status !== "active") return false; }
     if (search && !i.name.includes(search) && !(i.handle || "").includes(search)) return false;
     if (selectedCity && i.city !== selectedCity) return false;
-    if (selectedStatus && i.status !== selectedStatus) return false;
     return true;
   });
+
+  const counts = {
+    all: influencers.filter((i: any) => !i.is_deleted).length,
+    pending: influencers.filter((i: any) => !i.is_deleted && i.status === "pending").length,
+    active: influencers.filter((i: any) => !i.is_deleted && i.status === "active").length,
+    deleted: influencers.filter((i: any) => i.is_deleted).length,
+  };
 
   const handleAction = async (action: string, id: string, name: string) => {
     setConfirmDialog(null);
