@@ -92,6 +92,7 @@ export type Database = {
           description: string | null
           email: string | null
           id: string
+          is_deleted: boolean
           logo_url: string | null
           name: string
           phone: string | null
@@ -112,6 +113,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           id?: string
+          is_deleted?: boolean
           logo_url?: string | null
           name: string
           phone?: string | null
@@ -132,6 +134,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           id?: string
+          is_deleted?: boolean
           logo_url?: string | null
           name?: string
           phone?: string | null
@@ -474,6 +477,7 @@ export type Database = {
           gender: Database["public"]["Enums"]["gender_type"] | null
           handle: string | null
           id: string
+          is_deleted: boolean
           name: string
           reviews_count: number
           status: Database["public"]["Enums"]["entity_status"]
@@ -495,6 +499,7 @@ export type Database = {
           gender?: Database["public"]["Enums"]["gender_type"] | null
           handle?: string | null
           id?: string
+          is_deleted?: boolean
           name: string
           reviews_count?: number
           status?: Database["public"]["Enums"]["entity_status"]
@@ -516,6 +521,7 @@ export type Database = {
           gender?: Database["public"]["Enums"]["gender_type"] | null
           handle?: string | null
           id?: string
+          is_deleted?: boolean
           name?: string
           reviews_count?: number
           status?: Database["public"]["Enums"]["entity_status"]
