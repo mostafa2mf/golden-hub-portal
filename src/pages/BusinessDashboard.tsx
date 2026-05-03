@@ -133,9 +133,14 @@ const BusinessDashboard = () => {
 
         {/* Campaigns */}
         <div className="bg-card/80 border border-border/50 rounded-2xl p-5">
-          <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Megaphone className="w-5 h-5 text-primary" />{t("کمپین‌های من", "My Campaigns")}
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-foreground flex items-center gap-2">
+              <Megaphone className="w-5 h-5 text-primary" />{t("کمپین‌های من", "My Campaigns")}
+            </h2>
+            <Button size="sm" onClick={() => setAddCampaignOpen(true)} className="gap-1.5 rounded-xl gold-gradient text-primary-foreground border-0">
+              <Plus className="w-4 h-4" />{t("افزودن کمپین", "Add Campaign")}
+            </Button>
+          </div>
           {campaigns.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">{t("هنوز کمپینی ندارید", "No campaigns yet")}</p>
           ) : (
