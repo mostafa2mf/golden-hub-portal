@@ -9,8 +9,9 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import {
   LogOut, Building2, LayoutDashboard, Megaphone, Calendar, MessageSquare,
-  Edit, Save, Star, Users, TrendingUp
+  Edit, Save, Star, TrendingUp, Plus
 } from "lucide-react";
+import { CampaignFormModal } from "@/components/admin/CampaignFormModal";
 
 const BusinessDashboard = () => {
   const { t, dir } = useLanguage();
