@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -48,6 +48,30 @@ const MessagesPage = () => {
   });
 
   useRealtimeInvalidation("conversations", ["conversations"]);
+  useRealtimeInvalidation("chat_messages", ["conversations"]);
+
+  // When opening a chat, mark its messages as read + reset unread count
+  useEffect(() => {
+    if (!selectedChat) return;
+    (async () => {
+      await supabase.from("chat_messages").update({ is_read: true })
+        .eq("conversation_id", selectedChat).eq("is_read", false);
+      await supabase.from("conversations").update({ unread_count: 0 }).eq("id", selectedChat);
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["chat_messages", selectedChat] });
+    })();
+  }, [selectedChat]);
+
+  // Realtime subscription specific to currently open chat for instant message updates
+  useEffect(() => {
+    if (!selectedChat) return;
+    const channel = supabase
+      .channel(`open-chat-${selectedChat}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${selectedChat}` },
+        () => queryClient.invalidateQueries({ queryKey: ["chat_messages", selectedChat] }))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedChat, queryClient]);
 
   const selected = conversations.find((c: any) => c.id === selectedChat);
 
@@ -87,11 +111,28 @@ const MessagesPage = () => {
     return true;
   });
 
-  const filteredInfluencers = influencerList.filter((i: any) =>
-    !newChatSearch.trim() ||
-    i.name?.toLowerCase().includes(newChatSearch.toLowerCase()) ||
-    i.handle?.toLowerCase().includes(newChatSearch.toLowerCase())
-  );
+  // Precise + fuzzy matching: precise first, fuzzy fallback
+  const norm = (s: string) => (s || "").toLowerCase().trim().replace(/^@/, "");
+  const q = norm(newChatSearch);
+  const score = (i: any) => {
+    const name = norm(i.name);
+    const handle = norm(i.handle);
+    if (!q) return 1;
+    if (name === q || handle === q) return 100;
+    if (name.startsWith(q) || handle.startsWith(q)) return 50;
+    if (name.includes(q) || handle.includes(q)) return 20;
+    // fuzzy: every char of q appears in order in name/handle
+    const fuzzy = (s: string) => { let j = 0; for (const ch of s) if (ch === q[j]) j++; return j === q.length; };
+    if (fuzzy(name) || fuzzy(handle)) return 5;
+    return 0;
+  };
+  const ranked = influencerList
+    .map((i: any) => ({ i, s: score(i) }))
+    .filter((x: any) => x.s > 0)
+    .sort((a: any, b: any) => b.s - a.s);
+  const preciseMatches = ranked.filter((x: any) => x.s >= 20).map((x: any) => x.i);
+  const fuzzyMatches = ranked.filter((x: any) => x.s < 20).map((x: any) => x.i);
+  const filteredInfluencers = preciseMatches.length ? preciseMatches : [];
 
   return (
     <AdminLayout title={t("پیام‌ها", "Messages")}>
@@ -255,7 +296,7 @@ const MessagesPage = () => {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto scrollbar-thin">
-              {filteredInfluencers.length === 0 && (
+              {filteredInfluencers.length === 0 && fuzzyMatches.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">{t("بلاگری یافت نشد", "No bloggers found")}</p>
               )}
               {filteredInfluencers.map((inf: any) => (
@@ -273,6 +314,28 @@ const MessagesPage = () => {
                   </div>
                 </button>
               ))}
+              {filteredInfluencers.length === 0 && fuzzyMatches.length > 0 && (
+                <>
+                  <div className="px-3 pt-4 pb-2 text-[11px] uppercase tracking-wide text-muted-foreground/70">
+                    {t("نتیجه دقیقی نبود — پیشنهادها", "No exact match — suggestions")}
+                  </div>
+                  {fuzzyMatches.slice(0, 8).map((inf: any) => (
+                    <button
+                      key={inf.id}
+                      onClick={() => startChatWithInfluencer(inf)}
+                      className="w-full flex items-center gap-3 p-3 hover:bg-muted/20 transition-all border-b border-border/10 text-start opacity-80"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center text-primary font-bold text-sm">
+                        {inf.avatar_url ? <img src={inf.avatar_url} alt={inf.name} className="w-full h-full rounded-xl object-cover" /> : inf.name?.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-foreground truncate">{inf.name}</div>
+                        {inf.handle && <div className="text-xs text-muted-foreground truncate">@{inf.handle}</div>}
+                      </div>
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           </div>
         </div>

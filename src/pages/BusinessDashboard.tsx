@@ -9,9 +9,10 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import {
   LogOut, Building2, LayoutDashboard, Megaphone, Calendar, MessageSquare,
-  Edit, Save, Star, TrendingUp, Plus
+  Edit, Save, Star, TrendingUp, Plus, MessageCircle
 } from "lucide-react";
 import { CampaignFormModal } from "@/components/admin/CampaignFormModal";
+import { BloggerChatDialog } from "@/components/business/BloggerChatDialog";
 
 const BusinessDashboard = () => {
   const { t, dir } = useLanguage();
@@ -26,6 +27,8 @@ const BusinessDashboard = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [addCampaignOpen, setAddCampaignOpen] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [chatBlogger, setChatBlogger] = useState<{ id: string; name: string; avatar_url?: string } | null>(null);
+  const [pickerCampaign, setPickerCampaign] = useState<any | null>(null);
 
   useEffect(() => {
     if (!loading && (!session || session.entity_type !== "business")) {
@@ -39,7 +42,7 @@ const BusinessDashboard = () => {
       setLoadingData(true);
       const [profileRes, campaignsRes, meetingsRes, messagesRes] = await Promise.all([
         supabase.from("businesses").select("*").eq("id", session.entity_id).maybeSingle(),
-        supabase.from("campaigns").select("*").eq("business_id", session.entity_id).order("created_at", { ascending: false }),
+        supabase.from("campaigns").select("*, campaign_influencers(id, status, influencers(id, name, avatar_url))").eq("business_id", session.entity_id).order("created_at", { ascending: false }),
         supabase.from("meetings").select("*, influencers(name)").eq("business_id", session.entity_id).order("meeting_date", { ascending: true }).limit(5),
         supabase.from("conversations").select("*, chat_messages(content, created_at, sender_role)").eq("participant_entity_id", session.entity_id).order("last_message_at", { ascending: false }).limit(10),
       ]);
@@ -145,18 +148,36 @@ const BusinessDashboard = () => {
             <p className="text-sm text-muted-foreground text-center py-6">{t("هنوز کمپینی ندارید", "No campaigns yet")}</p>
           ) : (
             <div className="space-y-3">
-              {campaigns.map((c: any) => (
-                <div key={c.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
-                  {c.images?.[0] && (
-                    <img src={c.images[0]} alt={c.title} className="w-12 h-12 rounded-lg object-cover" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{c.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">{c.city || "-"}{c.address ? ` • ${c.address}` : ""}</p>
+              {campaigns.map((c: any) => {
+                const acceptedBloggers = (c.campaign_influencers || [])
+                  .filter((ci: any) => ci.status === "accepted" && ci.influencers)
+                  .map((ci: any) => ci.influencers);
+                return (
+                  <div key={c.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                    {c.images?.[0] && (
+                      <img src={c.images[0]} alt={c.title} className="w-12 h-12 rounded-lg object-cover" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{c.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{c.city || "-"}{c.address ? ` • ${c.address}` : ""}</p>
+                    </div>
+                    {acceptedBloggers.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 rounded-xl border-primary/40 text-primary hover:bg-primary/10"
+                        onClick={() => {
+                          if (acceptedBloggers.length === 1) setChatBlogger(acceptedBloggers[0]);
+                          else setPickerCampaign({ ...c, _bloggers: acceptedBloggers });
+                        }}
+                      >
+                        <MessageCircle className="w-4 h-4" />{t("شروع چت", "Chat")}
+                      </Button>
+                    )}
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">{t("فعال", "Active")}</span>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">{t("فعال", "Active")}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -247,6 +268,35 @@ const BusinessDashboard = () => {
         mode="business"
         businessId={session.entity_id}
         onCreated={() => setRefreshTick(t => t + 1)}
+      />
+
+      {/* Blogger picker (when campaign has multiple accepted bloggers) */}
+      <Dialog open={!!pickerCampaign} onOpenChange={() => setPickerCampaign(null)}>
+        <DialogContent className="bg-card border-border/50 rounded-2xl max-w-sm">
+          <DialogHeader><DialogTitle>{t("انتخاب بلاگر برای چت", "Select blogger to chat")}</DialogTitle></DialogHeader>
+          <div className="space-y-2 max-h-72 overflow-y-auto">
+            {pickerCampaign?._bloggers?.map((b: any) => (
+              <button
+                key={b.id}
+                onClick={() => { setChatBlogger(b); setPickerCampaign(null); }}
+                className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-muted/30 hover:bg-muted/50 transition-all text-start"
+              >
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-bold text-sm">
+                  {b.avatar_url ? <img src={b.avatar_url} alt={b.name} className="w-full h-full rounded-xl object-cover" /> : b.name?.charAt(0)}
+                </div>
+                <span className="text-sm font-medium">{b.name}</span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <BloggerChatDialog
+        open={!!chatBlogger}
+        onOpenChange={(v) => !v && setChatBlogger(null)}
+        businessId={session.entity_id}
+        businessName={session.name}
+        blogger={chatBlogger}
       />
     </div>
   );
