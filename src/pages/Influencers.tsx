@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Grid3X3, List, Eye, Ban, MessageSquare, CheckCircle, Trash2, UserPlus, Image as ImageIcon, Download, Instagram, ExternalLink } from "lucide-react";
+import { Search, Grid3X3, List, Eye, Ban, MessageSquare, CheckCircle, Trash2, UserPlus, Image as ImageIcon, Download, Instagram, ExternalLink, RotateCcw } from "lucide-react";
 import { exportToCSV } from "@/utils/csvExport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ const InfluencersPage = () => {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [search, setSearch] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [statusTab, setStatusTab] = useState<"all" | "pending" | "active" | "deleted">("all");
   const [detail, setDetail] = useState<any>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ type: string; id: string; name: string } | null>(null);
   const [addModal, setAddModal] = useState(false);
@@ -36,11 +36,19 @@ const InfluencersPage = () => {
 
   const cities = [...new Set(influencers.map((i: any) => i.city).filter(Boolean))];
   const filtered = influencers.filter((i: any) => {
+    if (statusTab === "deleted") { if (!i.is_deleted) return false; }
+    else { if (i.is_deleted) return false; if (statusTab === "pending" && i.status !== "pending") return false; if (statusTab === "active" && i.status !== "active") return false; }
     if (search && !i.name.includes(search) && !(i.handle || "").includes(search)) return false;
     if (selectedCity && i.city !== selectedCity) return false;
-    if (selectedStatus && i.status !== selectedStatus) return false;
     return true;
   });
+
+  const counts = {
+    all: influencers.filter((i: any) => !i.is_deleted).length,
+    pending: influencers.filter((i: any) => !i.is_deleted && i.status === "pending").length,
+    active: influencers.filter((i: any) => !i.is_deleted && i.status === "active").length,
+    deleted: influencers.filter((i: any) => i.is_deleted).length,
+  };
 
   const handleAction = async (action: string, id: string, name: string) => {
     setConfirmDialog(null);
@@ -49,9 +57,14 @@ const InfluencersPage = () => {
       queryClient.invalidateQueries({ queryKey: ["influencers"] });
       toast.success(t(`${name} غیرفعال شد`, `${name} deactivated`));
     } else if (action === "delete") {
-      await supabase.from("influencers").delete().eq("id", id);
+      await supabase.from("influencers").update({ is_deleted: true, status: "suspended" }).eq("id", id);
       queryClient.invalidateQueries({ queryKey: ["influencers"] });
       toast.success(t(`${name} حذف شد`, `${name} deleted`));
+      setDetail(null);
+    } else if (action === "restore") {
+      await supabase.from("influencers").update({ is_deleted: false, status: "pending" }).eq("id", id);
+      queryClient.invalidateQueries({ queryKey: ["influencers"] });
+      toast.success(t(`${name} بازگردانی شد`, `${name} restored`));
       setDetail(null);
     }
   };
@@ -105,12 +118,6 @@ const InfluencersPage = () => {
             <option value="">{t("همه شهرها", "All Cities")}</option>
             {cities.map(c => <option key={c} value={c!}>{c}</option>)}
           </select>
-          <select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)} className="bg-muted/50 border border-border/50 rounded-xl px-3 py-2.5 text-sm outline-none">
-            <option value="">{t("همه وضعیت‌ها", "All Statuses")}</option>
-            <option value="active">{t("فعال", "Active")}</option>
-            <option value="pending">{t("در انتظار", "Pending")}</option>
-            <option value="suspended">{t("معلق", "Suspended")}</option>
-          </select>
           <div className="flex gap-1 bg-muted/50 rounded-xl p-0.5">
             <button onClick={() => setViewMode("grid")} className={`p-2 rounded-lg transition-colors ${viewMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><Grid3X3 className="w-4 h-4" /></button>
             <button onClick={() => setViewMode("table")} className={`p-2 rounded-lg transition-colors ${viewMode === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><List className="w-4 h-4" /></button>
@@ -124,6 +131,18 @@ const InfluencersPage = () => {
           <Button onClick={() => setAddModal(true)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0">
             <UserPlus className="w-4 h-4" />{t("افزودن اینفلوئنسر", "Add Influencer")}
           </Button>
+        </div>
+        <div className="flex gap-1 bg-muted/30 rounded-xl p-0.5 mt-3 w-fit">
+          {([
+            { key: "all", fa: "همه", en: "All" },
+            { key: "pending", fa: "معلق‌ها", en: "Pending" },
+            { key: "active", fa: "فعال‌ها", en: "Active" },
+            { key: "deleted", fa: "حذف شده‌ها", en: "Deleted" },
+          ] as const).map(tab => (
+            <button key={tab.key} onClick={() => setStatusTab(tab.key)} className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${statusTab === tab.key ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}>
+              {t(tab.fa, tab.en)} <span className="opacity-60">({counts[tab.key]})</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -240,10 +259,16 @@ const InfluencersPage = () => {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" className="gap-2 rounded-xl"><MessageSquare className="w-4 h-4" />{t("پیام", "Message")}</Button>
-                <Button onClick={() => handleVerify(detail)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0"><CheckCircle className="w-4 h-4" />{detail.verified ? t("لغو تأیید", "Unverify") : t("تأیید", "Verify")}</Button>
-                <Button onClick={() => setConfirmDialog({ type: "deactivate", id: detail.id, name: detail.name })} variant="destructive" className="gap-2 rounded-xl"><Ban className="w-4 h-4" />{t("غیرفعال", "Deactivate")}</Button>
-                <Button onClick={() => setConfirmDialog({ type: "delete", id: detail.id, name: detail.name })} variant="ghost" className="gap-2 rounded-xl text-destructive"><Trash2 className="w-4 h-4" />{t("حذف", "Delete")}</Button>
+                {detail.is_deleted ? (
+                  <Button onClick={() => handleAction("restore", detail.id, detail.name)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0"><RotateCcw className="w-4 h-4" />{t("بازگردانی", "Restore")}</Button>
+                ) : (
+                  <>
+                    <Button variant="outline" className="gap-2 rounded-xl"><MessageSquare className="w-4 h-4" />{t("پیام", "Message")}</Button>
+                    <Button onClick={() => handleVerify(detail)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0"><CheckCircle className="w-4 h-4" />{detail.verified ? t("لغو تأیید", "Unverify") : t("تأیید", "Verify")}</Button>
+                    <Button onClick={() => setConfirmDialog({ type: "deactivate", id: detail.id, name: detail.name })} variant="outline" className="gap-2 rounded-xl"><Ban className="w-4 h-4" />{t("غیرفعال", "Deactivate")}</Button>
+                    <Button onClick={() => setConfirmDialog({ type: "delete", id: detail.id, name: detail.name })} variant="destructive" className="gap-2 rounded-xl"><Trash2 className="w-4 h-4" />{t("حذف", "Delete")}</Button>
+                  </>
+                )}
               </div>
             </div>
           )}

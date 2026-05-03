@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Eye, Edit, Ban, MessageSquare, CheckCircle, Star, Plus, Image as ImageIcon, Download } from "lucide-react";
+import { Search, Eye, Edit, Ban, MessageSquare, CheckCircle, Star, Plus, Image as ImageIcon, Download, Trash2, RotateCcw } from "lucide-react";
 import { exportToCSV } from "@/utils/csvExport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,10 @@ const BusinessesPage = () => {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [statusTab, setStatusTab] = useState<"all" | "pending" | "active" | "deleted">("all");
   const [detail, setDetail] = useState<any>(null);
   const [addModal, setAddModal] = useState(false);
-  const [confirmDialog, setConfirmDialog] = useState<{ type: string; id: string; name: string } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ type: "deactivate" | "delete"; id: string; name: string } | null>(null);
   const [addForm, setAddForm] = useState({ name: "", category: "Cafe", city: "", contact: "", phone: "", email: "", description: "", username: "", password: "", keyword: "" });
 
   const { data: businesses = [], isLoading } = useQuery({
@@ -31,7 +32,33 @@ const BusinessesPage = () => {
 
   useRealtimeInvalidation("businesses", ["businesses"]);
 
-  const filtered = businesses.filter((b: any) => !search || b.name.includes(search) || (b.categories?.name || "").includes(search));
+  const filtered = businesses.filter((b: any) => {
+    if (statusTab === "deleted") { if (!b.is_deleted) return false; }
+    else { if (b.is_deleted) return false; if (statusTab === "pending" && b.status !== "pending") return false; if (statusTab === "active" && b.status !== "active") return false; }
+    if (search && !b.name.includes(search) && !(b.categories?.name || "").includes(search)) return false;
+    return true;
+  });
+
+  const counts = {
+    all: businesses.filter((b: any) => !b.is_deleted).length,
+    pending: businesses.filter((b: any) => !b.is_deleted && b.status === "pending").length,
+    active: businesses.filter((b: any) => !b.is_deleted && b.status === "active").length,
+    deleted: businesses.filter((b: any) => b.is_deleted).length,
+  };
+
+  const handleSoftDelete = async (id: string, name: string) => {
+    await supabase.from("businesses").update({ is_deleted: true, status: "suspended" }).eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["businesses"] });
+    toast.success(t(`${name} حذف شد`, `${name} deleted`));
+    setDetail(null); setConfirmDialog(null);
+  };
+
+  const handleRestore = async (id: string, name: string) => {
+    await supabase.from("businesses").update({ is_deleted: false, status: "pending" }).eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["businesses"] });
+    toast.success(t(`${name} بازگردانی شد`, `${name} restored`));
+    setDetail(null);
+  };
 
   const handleAdd = async () => {
     const v = validateOrToast(businessSchema, addForm);
@@ -82,6 +109,18 @@ const BusinessesPage = () => {
           <Button onClick={() => setAddModal(true)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0">
             <Plus className="w-4 h-4" />{t("افزودن کسب‌وکار", "Add Business")}
           </Button>
+        </div>
+        <div className="flex gap-1 bg-muted/30 rounded-xl p-0.5 mt-3 w-fit">
+          {([
+            { key: "all", fa: "همه", en: "All" },
+            { key: "pending", fa: "معلق‌ها", en: "Pending" },
+            { key: "active", fa: "فعال‌ها", en: "Active" },
+            { key: "deleted", fa: "حذف شده‌ها", en: "Deleted" },
+          ] as const).map(tab => (
+            <button key={tab.key} onClick={() => setStatusTab(tab.key)} className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${statusTab === tab.key ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}>
+              {t(tab.fa, tab.en)} <span className="opacity-60">({counts[tab.key]})</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -143,10 +182,17 @@ const BusinessesPage = () => {
                 <div className="p-3 rounded-xl bg-muted/30"><span className="text-muted-foreground">{t("همکاری تکمیل‌شده", "Completed")}</span><div className="font-medium mt-1">{detail.completed_collabs}</div></div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" className="gap-2 rounded-xl"><MessageSquare className="w-4 h-4" />{t("پیام", "Message")}</Button>
-                <Button variant="outline" className="gap-2 rounded-xl"><Edit className="w-4 h-4" />{t("ویرایش", "Edit")}</Button>
-                <Button className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0"><CheckCircle className="w-4 h-4" />{t("تأیید", "Verify")}</Button>
-                <Button variant="destructive" className="gap-2 rounded-xl" onClick={() => { setDetail(null); setConfirmDialog({ type: "deactivate", id: detail.id, name: detail.name }); }}><Ban className="w-4 h-4" />{t("غیرفعال", "Deactivate")}</Button>
+                {!detail.is_deleted ? (
+                  <>
+                    <Button variant="outline" className="gap-2 rounded-xl"><MessageSquare className="w-4 h-4" />{t("پیام", "Message")}</Button>
+                    <Button variant="outline" className="gap-2 rounded-xl"><Edit className="w-4 h-4" />{t("ویرایش", "Edit")}</Button>
+                    <Button className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0"><CheckCircle className="w-4 h-4" />{t("تأیید", "Verify")}</Button>
+                    <Button variant="outline" className="gap-2 rounded-xl" onClick={() => { setDetail(null); setConfirmDialog({ type: "deactivate", id: detail.id, name: detail.name }); }}><Ban className="w-4 h-4" />{t("غیرفعال", "Deactivate")}</Button>
+                    <Button variant="destructive" className="gap-2 rounded-xl" onClick={() => { setDetail(null); setConfirmDialog({ type: "delete", id: detail.id, name: detail.name }); }}><Trash2 className="w-4 h-4" />{t("حذف", "Delete")}</Button>
+                  </>
+                ) : (
+                  <Button className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0" onClick={() => handleRestore(detail.id, detail.name)}><RotateCcw className="w-4 h-4" />{t("بازگردانی", "Restore")}</Button>
+                )}
               </div>
             </div>
           )}
@@ -185,10 +231,24 @@ const BusinessesPage = () => {
       <Dialog open={!!confirmDialog} onOpenChange={() => setConfirmDialog(null)}>
         <DialogContent className="bg-card border-border/50 rounded-2xl max-w-sm">
           <DialogHeader><DialogTitle>{t("تأیید عملیات", "Confirm Action")}</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">{t(`آیا مطمئن هستید که می‌خواهید ${confirmDialog?.name} را غیرفعال کنید؟`, `Are you sure you want to deactivate ${confirmDialog?.name}?`)}</p>
+          <p className="text-sm text-muted-foreground">
+            {confirmDialog?.type === "delete"
+              ? t(`آیا مطمئن هستید که می‌خواهید ${confirmDialog?.name} را حذف کنید؟ (قابل بازگردانی)`, `Delete ${confirmDialog?.name}? (can be restored)`)
+              : t(`آیا مطمئن هستید که می‌خواهید ${confirmDialog?.name} را غیرفعال کنید؟`, `Deactivate ${confirmDialog?.name}?`)}
+          </p>
           <div className="flex gap-2 justify-end">
             <Button variant="ghost" onClick={() => setConfirmDialog(null)}>{t("انصراف", "Cancel")}</Button>
-            <Button variant="destructive" onClick={async () => { if (confirmDialog) { await supabase.from("businesses").update({ status: "suspended" }).eq("id", confirmDialog.id); queryClient.invalidateQueries({ queryKey: ["businesses"] }); toast.success(t("غیرفعال شد", "Deactivated")); setConfirmDialog(null); } }}>{t("غیرفعال", "Deactivate")}</Button>
+            <Button variant="destructive" onClick={async () => {
+              if (!confirmDialog) return;
+              if (confirmDialog.type === "delete") {
+                await handleSoftDelete(confirmDialog.id, confirmDialog.name);
+              } else {
+                await supabase.from("businesses").update({ status: "suspended" }).eq("id", confirmDialog.id);
+                queryClient.invalidateQueries({ queryKey: ["businesses"] });
+                toast.success(t("غیرفعال شد", "Deactivated"));
+                setConfirmDialog(null);
+              }
+            }}>{confirmDialog?.type === "delete" ? t("حذف", "Delete") : t("غیرفعال", "Deactivate")}</Button>
           </div>
         </DialogContent>
       </Dialog>

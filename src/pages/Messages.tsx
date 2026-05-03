@@ -4,7 +4,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Pin, Send, Image, Paperclip, Archive, Flag, CheckCheck, MessageSquare, ArrowRight, Plus, X } from "lucide-react";
+import { Search, Pin, Send, Image, Paperclip, Archive, Flag, Check, CheckCheck, MessageSquare, ArrowRight, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -62,12 +62,14 @@ const MessagesPage = () => {
     })();
   }, [selectedChat]);
 
-  // Realtime subscription specific to currently open chat for instant message updates
+  // Realtime subscription specific to currently open chat for instant message + read-receipt updates
   useEffect(() => {
     if (!selectedChat) return;
     const channel = supabase
       .channel(`open-chat-${selectedChat}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${selectedChat}` },
+        () => queryClient.invalidateQueries({ queryKey: ["chat_messages", selectedChat] }))
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${selectedChat}` },
         () => queryClient.invalidateQueries({ queryKey: ["chat_messages", selectedChat] }))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -244,7 +246,9 @@ const MessagesPage = () => {
                         <p className="text-foreground">{msg.content}</p>
                         <div className="flex items-center justify-end gap-1.5 mt-1.5">
                           <span className="text-[10px] text-muted-foreground/70">{new Date(msg.created_at).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}</span>
-                          {msg.sender_role === "admin" && <CheckCheck className="w-3.5 h-3.5 text-primary/60" />}
+                          {msg.sender_role === "admin" && (msg.is_read
+                            ? <CheckCheck className="w-3.5 h-3.5 text-primary" />
+                            : <Check className="w-3.5 h-3.5 text-muted-foreground/60" />)}
                         </div>
                       </div>
                     </div>
