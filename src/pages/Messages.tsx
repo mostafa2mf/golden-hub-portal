@@ -100,9 +100,23 @@ const MessagesPage = () => {
           {/* Sidebar */}
           <div className={cn("w-full md:w-96 border-e border-border/30 flex flex-col bg-card/40", selectedChat && "hidden md:flex")}>
             <div className="p-4 border-b border-border/30 space-y-3">
-              <div className="flex items-center bg-muted/30 rounded-xl border border-border/30">
-                <Search className="w-4 h-4 text-muted-foreground mx-3" />
-                <input placeholder={t("جستجو...", "Search...")} className="bg-transparent border-none outline-none text-sm py-2.5 pe-3 w-full text-foreground placeholder:text-muted-foreground" />
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center bg-muted/30 rounded-xl border border-border/30">
+                  <Search className="w-4 h-4 text-muted-foreground mx-3" />
+                  <input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder={t("جستجو در مکالمات...", "Search conversations...")}
+                    className="bg-transparent border-none outline-none text-sm py-2.5 pe-3 w-full text-foreground placeholder:text-muted-foreground"
+                  />
+                </div>
+                <button
+                  onClick={() => setShowNewChat(true)}
+                  title={t("شروع چت با بلاگر", "New chat with blogger")}
+                  className="p-2.5 rounded-xl gold-gradient text-primary-foreground shadow-md hover:opacity-90 transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
               {/* Single switcher: همه | بلاگرها | کسب‌وکارها */}
               <div className="flex gap-1 bg-muted/30 rounded-xl p-0.5">
