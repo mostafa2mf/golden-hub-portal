@@ -18,7 +18,7 @@ const InfluencersPage = () => {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [search, setSearch] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [statusTab, setStatusTab] = useState<"all" | "pending" | "active" | "deleted">("all");
   const [detail, setDetail] = useState<any>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ type: string; id: string; name: string } | null>(null);
   const [addModal, setAddModal] = useState(false);
