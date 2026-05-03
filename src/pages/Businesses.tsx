@@ -16,9 +16,10 @@ const BusinessesPage = () => {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [statusTab, setStatusTab] = useState<"all" | "pending" | "active" | "deleted">("all");
   const [detail, setDetail] = useState<any>(null);
   const [addModal, setAddModal] = useState(false);
-  const [confirmDialog, setConfirmDialog] = useState<{ type: string; id: string; name: string } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ type: "deactivate" | "delete"; id: string; name: string } | null>(null);
   const [addForm, setAddForm] = useState({ name: "", category: "Cafe", city: "", contact: "", phone: "", email: "", description: "", username: "", password: "", keyword: "" });
 
   const { data: businesses = [], isLoading } = useQuery({
