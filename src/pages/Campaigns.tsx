@@ -23,23 +23,7 @@ const CampaignsPage = () => {
   const [addModal, setAddModal] = useState(false);
   const [cancelModal, setCancelModal] = useState<string | null>(null);
   const [sendCampaign, setSendCampaign] = useState<any>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingImages, setUploadingImages] = useState(false);
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const statuses = ["active", "pending", "scheduled", "completed", "rejected"];
-
-  const [addForm, setAddForm] = useState({
-    title: "",
-    business_id: "",
-    custom_business: "",
-    category_id: "",
-    city: "",
-    address: "",
-    description: "",
-    start_date: "",
-    end_date: "",
-  });
 
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["campaigns"],
