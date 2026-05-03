@@ -259,10 +259,16 @@ const InfluencersPage = () => {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" className="gap-2 rounded-xl"><MessageSquare className="w-4 h-4" />{t("پیام", "Message")}</Button>
-                <Button onClick={() => handleVerify(detail)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0"><CheckCircle className="w-4 h-4" />{detail.verified ? t("لغو تأیید", "Unverify") : t("تأیید", "Verify")}</Button>
-                <Button onClick={() => setConfirmDialog({ type: "deactivate", id: detail.id, name: detail.name })} variant="destructive" className="gap-2 rounded-xl"><Ban className="w-4 h-4" />{t("غیرفعال", "Deactivate")}</Button>
-                <Button onClick={() => setConfirmDialog({ type: "delete", id: detail.id, name: detail.name })} variant="ghost" className="gap-2 rounded-xl text-destructive"><Trash2 className="w-4 h-4" />{t("حذف", "Delete")}</Button>
+                {detail.is_deleted ? (
+                  <Button onClick={() => handleAction("restore", detail.id, detail.name)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0"><RotateCcw className="w-4 h-4" />{t("بازگردانی", "Restore")}</Button>
+                ) : (
+                  <>
+                    <Button variant="outline" className="gap-2 rounded-xl"><MessageSquare className="w-4 h-4" />{t("پیام", "Message")}</Button>
+                    <Button onClick={() => handleVerify(detail)} className="gap-2 rounded-xl gold-gradient text-primary-foreground border-0"><CheckCircle className="w-4 h-4" />{detail.verified ? t("لغو تأیید", "Unverify") : t("تأیید", "Verify")}</Button>
+                    <Button onClick={() => setConfirmDialog({ type: "deactivate", id: detail.id, name: detail.name })} variant="outline" className="gap-2 rounded-xl"><Ban className="w-4 h-4" />{t("غیرفعال", "Deactivate")}</Button>
+                    <Button onClick={() => setConfirmDialog({ type: "delete", id: detail.id, name: detail.name })} variant="destructive" className="gap-2 rounded-xl"><Trash2 className="w-4 h-4" />{t("حذف", "Delete")}</Button>
+                  </>
+                )}
               </div>
             </div>
           )}
