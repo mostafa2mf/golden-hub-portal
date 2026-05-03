@@ -132,6 +132,18 @@ const InfluencersPage = () => {
             <UserPlus className="w-4 h-4" />{t("افزودن اینفلوئنسر", "Add Influencer")}
           </Button>
         </div>
+        <div className="flex gap-1 bg-muted/30 rounded-xl p-0.5 mt-3 w-fit">
+          {([
+            { key: "all", fa: "همه", en: "All" },
+            { key: "pending", fa: "معلق‌ها", en: "Pending" },
+            { key: "active", fa: "فعال‌ها", en: "Active" },
+            { key: "deleted", fa: "حذف شده‌ها", en: "Deleted" },
+          ] as const).map(tab => (
+            <button key={tab.key} onClick={() => setStatusTab(tab.key)} className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${statusTab === tab.key ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}>
+              {t(tab.fa, tab.en)} <span className="opacity-60">({counts[tab.key]})</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {filtered.length === 0 && <div className="glass-card p-12 text-center text-muted-foreground"><p className="text-sm">{t("اینفلوئنسری یافت نشد", "No influencers found")}</p></div>}
