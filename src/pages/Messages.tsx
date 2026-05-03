@@ -4,7 +4,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Pin, Send, Image, Paperclip, Archive, Flag, CheckCheck, MessageSquare, ArrowRight } from "lucide-react";
+import { Search, Pin, Send, Image, Paperclip, Archive, Flag, CheckCheck, MessageSquare, ArrowRight, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -16,6 +16,9 @@ const MessagesPage = () => {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [search, setSearch] = useState("");
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [newChatSearch, setNewChatSearch] = useState("");
 
   const { data: conversations = [] } = useQuery({
     queryKey: ["conversations"],
@@ -23,6 +26,15 @@ const MessagesPage = () => {
       const { data } = await supabase.from("conversations").select("*").order("last_message_at", { ascending: false });
       return data || [];
     },
+  });
+
+  const { data: influencerList = [] } = useQuery({
+    queryKey: ["influencers-for-chat"],
+    queryFn: async () => {
+      const { data } = await supabase.from("influencers").select("id,name,handle,avatar_url").order("name");
+      return data || [];
+    },
+    enabled: showNewChat,
   });
 
   const { data: chatMessages = [] } = useQuery({
@@ -48,11 +60,38 @@ const MessagesPage = () => {
     setMessage("");
   };
 
+  const startChatWithInfluencer = async (inf: any) => {
+    // Reuse existing conversation if present
+    const existing = conversations.find((c: any) => c.participant_role === "influencer" && c.participant_entity_id === inf.id);
+    if (existing) {
+      setSelectedChat(existing.id);
+      setShowNewChat(false);
+      return;
+    }
+    const { data, error } = await supabase.from("conversations").insert({
+      participant_role: "influencer" as any,
+      participant_name: inf.name,
+      participant_entity_id: inf.id,
+    }).select().single();
+    if (error) { toast.error(error.message); return; }
+    queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    setSelectedChat(data.id);
+    setShowNewChat(false);
+    toast.success(t("مکالمه ایجاد شد", "Conversation started"));
+  };
+
   const filteredConversations = conversations.filter((m: any) => {
-    if (roleFilter === "influencer") return m.participant_role === "influencer";
-    if (roleFilter === "business") return m.participant_role === "business";
+    if (roleFilter === "influencer" && m.participant_role !== "influencer") return false;
+    if (roleFilter === "business" && m.participant_role !== "business") return false;
+    if (search.trim() && !m.participant_name?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  const filteredInfluencers = influencerList.filter((i: any) =>
+    !newChatSearch.trim() ||
+    i.name?.toLowerCase().includes(newChatSearch.toLowerCase()) ||
+    i.handle?.toLowerCase().includes(newChatSearch.toLowerCase())
+  );
 
   return (
     <AdminLayout title={t("پیام‌ها", "Messages")}>
@@ -61,9 +100,23 @@ const MessagesPage = () => {
           {/* Sidebar */}
           <div className={cn("w-full md:w-96 border-e border-border/30 flex flex-col bg-card/40", selectedChat && "hidden md:flex")}>
             <div className="p-4 border-b border-border/30 space-y-3">
-              <div className="flex items-center bg-muted/30 rounded-xl border border-border/30">
-                <Search className="w-4 h-4 text-muted-foreground mx-3" />
-                <input placeholder={t("جستجو...", "Search...")} className="bg-transparent border-none outline-none text-sm py-2.5 pe-3 w-full text-foreground placeholder:text-muted-foreground" />
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center bg-muted/30 rounded-xl border border-border/30">
+                  <Search className="w-4 h-4 text-muted-foreground mx-3" />
+                  <input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder={t("جستجو در مکالمات...", "Search conversations...")}
+                    className="bg-transparent border-none outline-none text-sm py-2.5 pe-3 w-full text-foreground placeholder:text-muted-foreground"
+                  />
+                </div>
+                <button
+                  onClick={() => setShowNewChat(true)}
+                  title={t("شروع چت با بلاگر", "New chat with blogger")}
+                  className="p-2.5 rounded-xl gold-gradient text-primary-foreground shadow-md hover:opacity-90 transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
               {/* Single switcher: همه | بلاگرها | کسب‌وکارها */}
               <div className="flex gap-1 bg-muted/30 rounded-xl p-0.5">
@@ -181,6 +234,49 @@ const MessagesPage = () => {
           </div>
         </div>
       </div>
+
+      {showNewChat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" onClick={() => setShowNewChat(false)}>
+          <div className="bg-card border border-border/40 rounded-2xl shadow-2xl w-[90%] max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-border/30">
+              <h3 className="text-sm font-bold text-foreground">{t("شروع چت با بلاگر", "Start chat with blogger")}</h3>
+              <button onClick={() => setShowNewChat(false)} className="p-1.5 rounded-lg hover:bg-muted/30"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-4 border-b border-border/30">
+              <div className="flex items-center bg-muted/30 rounded-xl border border-border/30">
+                <Search className="w-4 h-4 text-muted-foreground mx-3" />
+                <input
+                  autoFocus
+                  value={newChatSearch}
+                  onChange={e => setNewChatSearch(e.target.value)}
+                  placeholder={t("جستجوی نام یا هندل...", "Search name or handle...")}
+                  className="bg-transparent border-none outline-none text-sm py-2.5 pe-3 w-full text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto scrollbar-thin">
+              {filteredInfluencers.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">{t("بلاگری یافت نشد", "No bloggers found")}</p>
+              )}
+              {filteredInfluencers.map((inf: any) => (
+                <button
+                  key={inf.id}
+                  onClick={() => startChatWithInfluencer(inf)}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-muted/20 transition-all border-b border-border/10 text-start"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-bold text-sm">
+                    {inf.avatar_url ? <img src={inf.avatar_url} alt={inf.name} className="w-full h-full rounded-xl object-cover" /> : inf.name?.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-foreground truncate">{inf.name}</div>
+                    {inf.handle && <div className="text-xs text-muted-foreground truncate">@{inf.handle}</div>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };
