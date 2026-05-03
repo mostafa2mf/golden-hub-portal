@@ -32,24 +32,6 @@ const CampaignsPage = () => {
       return data || [];
     },
   });
-
-  // Show ALL businesses (not just active) so admin can pick pending ones too
-  const { data: businesses = [] } = useQuery({
-    queryKey: ["businesses-list-all"],
-    queryFn: async () => {
-      const { data } = await supabase.from("businesses").select("id, name").order("name");
-      return data || [];
-    },
-  });
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ["categories-list"],
-    queryFn: async () => {
-      const { data } = await supabase.from("categories").select("id, name, name_fa").order("name");
-      return data || [];
-    },
-  });
-
   useRealtimeInvalidation("campaigns", ["campaigns"]);
 
   const handleCancel = async (id: string) => {
