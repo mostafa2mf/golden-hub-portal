@@ -16,6 +16,9 @@ const MessagesPage = () => {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [search, setSearch] = useState("");
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [newChatSearch, setNewChatSearch] = useState("");
 
   const { data: conversations = [] } = useQuery({
     queryKey: ["conversations"],
@@ -23,6 +26,15 @@ const MessagesPage = () => {
       const { data } = await supabase.from("conversations").select("*").order("last_message_at", { ascending: false });
       return data || [];
     },
+  });
+
+  const { data: influencerList = [] } = useQuery({
+    queryKey: ["influencers-for-chat"],
+    queryFn: async () => {
+      const { data } = await supabase.from("influencers").select("id,name,handle,avatar_url").order("name");
+      return data || [];
+    },
+    enabled: showNewChat,
   });
 
   const { data: chatMessages = [] } = useQuery({
@@ -48,11 +60,38 @@ const MessagesPage = () => {
     setMessage("");
   };
 
+  const startChatWithInfluencer = async (inf: any) => {
+    // Reuse existing conversation if present
+    const existing = conversations.find((c: any) => c.participant_role === "influencer" && c.participant_entity_id === inf.id);
+    if (existing) {
+      setSelectedChat(existing.id);
+      setShowNewChat(false);
+      return;
+    }
+    const { data, error } = await supabase.from("conversations").insert({
+      participant_role: "influencer" as any,
+      participant_name: inf.name,
+      participant_entity_id: inf.id,
+    }).select().single();
+    if (error) { toast.error(error.message); return; }
+    queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    setSelectedChat(data.id);
+    setShowNewChat(false);
+    toast.success(t("مکالمه ایجاد شد", "Conversation started"));
+  };
+
   const filteredConversations = conversations.filter((m: any) => {
-    if (roleFilter === "influencer") return m.participant_role === "influencer";
-    if (roleFilter === "business") return m.participant_role === "business";
+    if (roleFilter === "influencer" && m.participant_role !== "influencer") return false;
+    if (roleFilter === "business" && m.participant_role !== "business") return false;
+    if (search.trim() && !m.participant_name?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  const filteredInfluencers = influencerList.filter((i: any) =>
+    !newChatSearch.trim() ||
+    i.name?.toLowerCase().includes(newChatSearch.toLowerCase()) ||
+    i.handle?.toLowerCase().includes(newChatSearch.toLowerCase())
+  );
 
   return (
     <AdminLayout title={t("پیام‌ها", "Messages")}>
