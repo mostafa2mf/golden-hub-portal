@@ -27,6 +27,8 @@ const BusinessDashboard = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [addCampaignOpen, setAddCampaignOpen] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [chatBlogger, setChatBlogger] = useState<{ id: string; name: string; avatar_url?: string } | null>(null);
+  const [pickerCampaign, setPickerCampaign] = useState<any | null>(null);
 
   useEffect(() => {
     if (!loading && (!session || session.entity_type !== "business")) {
