@@ -42,7 +42,7 @@ const BusinessDashboard = () => {
       setLoadingData(true);
       const [profileRes, campaignsRes, meetingsRes, messagesRes] = await Promise.all([
         supabase.from("businesses").select("*").eq("id", session.entity_id).maybeSingle(),
-        supabase.from("campaigns").select("*").eq("business_id", session.entity_id).order("created_at", { ascending: false }),
+        supabase.from("campaigns").select("*, campaign_influencers(id, status, influencers(id, name, avatar_url))").eq("business_id", session.entity_id).order("created_at", { ascending: false }),
         supabase.from("meetings").select("*, influencers(name)").eq("business_id", session.entity_id).order("meeting_date", { ascending: true }).limit(5),
         supabase.from("conversations").select("*, chat_messages(content, created_at, sender_role)").eq("participant_entity_id", session.entity_id).order("last_message_at", { ascending: false }).limit(10),
       ]);
