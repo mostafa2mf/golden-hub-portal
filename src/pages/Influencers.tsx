@@ -113,12 +113,6 @@ const InfluencersPage = () => {
             <option value="">{t("همه شهرها", "All Cities")}</option>
             {cities.map(c => <option key={c} value={c!}>{c}</option>)}
           </select>
-          <select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)} className="bg-muted/50 border border-border/50 rounded-xl px-3 py-2.5 text-sm outline-none">
-            <option value="">{t("همه وضعیت‌ها", "All Statuses")}</option>
-            <option value="active">{t("فعال", "Active")}</option>
-            <option value="pending">{t("در انتظار", "Pending")}</option>
-            <option value="suspended">{t("معلق", "Suspended")}</option>
-          </select>
           <div className="flex gap-1 bg-muted/50 rounded-xl p-0.5">
             <button onClick={() => setViewMode("grid")} className={`p-2 rounded-lg transition-colors ${viewMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><Grid3X3 className="w-4 h-4" /></button>
             <button onClick={() => setViewMode("table")} className={`p-2 rounded-lg transition-colors ${viewMode === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><List className="w-4 h-4" /></button>
