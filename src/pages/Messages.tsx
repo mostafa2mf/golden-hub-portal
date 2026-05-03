@@ -62,12 +62,14 @@ const MessagesPage = () => {
     })();
   }, [selectedChat]);
 
-  // Realtime subscription specific to currently open chat for instant message updates
+  // Realtime subscription specific to currently open chat for instant message + read-receipt updates
   useEffect(() => {
     if (!selectedChat) return;
     const channel = supabase
       .channel(`open-chat-${selectedChat}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${selectedChat}` },
+        () => queryClient.invalidateQueries({ queryKey: ["chat_messages", selectedChat] }))
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${selectedChat}` },
         () => queryClient.invalidateQueries({ queryKey: ["chat_messages", selectedChat] }))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
