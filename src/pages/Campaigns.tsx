@@ -193,122 +193,16 @@ const CampaignsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Campaign Modal */}
-      <Dialog open={addModal} onOpenChange={setAddModal}>
-        <DialogContent className="bg-card border-border/50 rounded-2xl max-w-md max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{t("افزودن کمپین جدید", "Add New Campaign")}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            {/* 3 Images upload */}
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">
-                {t("تصاویر کمپین (تا ۳ تصویر)", "Campaign Images (up to 3)")}
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[0, 1, 2].map(i => (
-                  <div key={i} className="relative aspect-square">
-                    {imagePreviews[i] ? (
-                      <>
-                        <img src={imagePreviews[i]} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl" />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(i)}
-                          className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </>
-                    ) : (
-                      <div
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full h-full rounded-xl border-2 border-dashed border-border/50 bg-muted/20 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-all text-muted-foreground"
-                      >
-                        <Upload className="w-4 h-4" />
-                        <span className="text-[10px] mt-1">{i + 1}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImagesSelect} />
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">{t("عنوان کمپین", "Campaign Title")} *</label>
-              <input value={addForm.title} onChange={e => setAddForm(p => ({ ...p, title: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" />
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">{t("کسب‌وکار", "Business")} *</label>
-              <select value={addForm.business_id} onChange={e => setAddForm(p => ({ ...p, business_id: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50">
-                <option value="">{t("انتخاب کنید", "Select...")}</option>
-                {businesses.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                <option value="__other__">{t("دیگر (افزودن کسب‌وکار جدید)", "Other (add new business)")}</option>
-              </select>
-            </div>
-
-            {isCustomBusiness && (
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">{t("نام کسب‌وکار جدید", "New Business Name")} *</label>
-                <input value={addForm.custom_business} onChange={e => setAddForm(p => ({ ...p, custom_business: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" placeholder={t("مثلاً: کافه آرامش", "e.g. Cafe Aramesh")} />
-              </div>
-            )}
-
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">{t("دسته‌بندی", "Category")}</label>
-              <select value={addForm.category_id} onChange={e => setAddForm(p => ({ ...p, category_id: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50">
-                <option value="">{t("انتخاب کنید", "Select...")}</option>
-                {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name_fa || c.name}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">{t("شهر", "City")}</label>
-              <input value={addForm.city} onChange={e => setAddForm(p => ({ ...p, city: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" />
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">{t("آدرس", "Address")}</label>
-              <input value={addForm.address} onChange={e => setAddForm(p => ({ ...p, address: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" placeholder={t("آدرس دقیق", "Full address")} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">{t("تاریخ شروع (شمسی)", "Start Date (Jalali)")}</label>
-                <DatePicker
-                  calendar={persian}
-                  locale={persian_fa}
-                  value={addForm.start_date}
-                  onChange={(d: any) => setAddForm(p => ({ ...p, start_date: d ? d.toDate().toISOString().split("T")[0] : "" }))}
-                  inputClass="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50"
-                  containerClassName="w-full"
-                  calendarPosition="bottom-right"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">{t("تاریخ پایان (شمسی)", "End Date (Jalali)")}</label>
-                <DatePicker
-                  calendar={persian}
-                  locale={persian_fa}
-                  value={addForm.end_date}
-                  onChange={(d: any) => setAddForm(p => ({ ...p, end_date: d ? d.toDate().toISOString().split("T")[0] : "" }))}
-                  inputClass="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50"
-                  containerClassName="w-full"
-                  calendarPosition="bottom-right"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">{t("توضیحات آفر", "Offer Description")}</label>
-              <textarea value={addForm.description} onChange={e => setAddForm(p => ({ ...p, description: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50 h-20 resize-none" placeholder={t("آفری که می‌خواهید ارائه دهید...", "The offer you want to present...")} />
-            </div>
-
-            <Button disabled={uploadingImages} className="w-full rounded-xl gold-gradient text-primary-foreground border-0" onClick={handleAdd}>
-              {uploadingImages ? t("در حال آپلود...", "Uploading...") : t("افزودن کمپین", "Add Campaign")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Add Campaign Modal (shared component) */}
+      <CampaignFormModal
+        open={addModal}
+        onOpenChange={setAddModal}
+        mode="admin"
+        onCreated={() => {
+          queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+          queryClient.invalidateQueries({ queryKey: ["campaign-form-businesses"] });
+        }}
+      />
 
       {/* Cancel Confirm */}
       <Dialog open={!!cancelModal} onOpenChange={() => setCancelModal(null)}>
