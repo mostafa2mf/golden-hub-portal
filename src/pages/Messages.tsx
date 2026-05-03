@@ -4,7 +4,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Pin, Send, Image, Paperclip, Archive, Flag, CheckCheck, MessageSquare, ArrowRight, Plus, X } from "lucide-react";
+import { Search, Pin, Send, Image, Paperclip, Archive, Flag, Check, CheckCheck, MessageSquare, ArrowRight, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
