@@ -9,8 +9,9 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import {
   LogOut, Building2, LayoutDashboard, Megaphone, Calendar, MessageSquare,
-  Edit, Save, Star, Users, TrendingUp
+  Edit, Save, Star, TrendingUp, Plus
 } from "lucide-react";
+import { CampaignFormModal } from "@/components/admin/CampaignFormModal";
 
 const BusinessDashboard = () => {
   const { t, dir } = useLanguage();
@@ -23,6 +24,8 @@ const BusinessDashboard = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ description: "", city: "", phone: "", email: "" });
   const [loadingData, setLoadingData] = useState(true);
+  const [addCampaignOpen, setAddCampaignOpen] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     if (!loading && (!session || session.entity_type !== "business")) {
@@ -55,7 +58,7 @@ const BusinessDashboard = () => {
       setLoadingData(false);
     };
     fetchData();
-  }, [session]);
+  }, [session, refreshTick]);
 
   const handleSaveProfile = async () => {
     if (!session) return;
@@ -130,9 +133,14 @@ const BusinessDashboard = () => {
 
         {/* Campaigns */}
         <div className="bg-card/80 border border-border/50 rounded-2xl p-5">
-          <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Megaphone className="w-5 h-5 text-primary" />{t("کمپین‌های من", "My Campaigns")}
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-foreground flex items-center gap-2">
+              <Megaphone className="w-5 h-5 text-primary" />{t("کمپین‌های من", "My Campaigns")}
+            </h2>
+            <Button size="sm" onClick={() => setAddCampaignOpen(true)} className="gap-1.5 rounded-xl gold-gradient text-primary-foreground border-0">
+              <Plus className="w-4 h-4" />{t("افزودن کمپین", "Add Campaign")}
+            </Button>
+          </div>
           {campaigns.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">{t("هنوز کمپینی ندارید", "No campaigns yet")}</p>
           ) : (
@@ -232,6 +240,14 @@ const BusinessDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <CampaignFormModal
+        open={addCampaignOpen}
+        onOpenChange={setAddCampaignOpen}
+        mode="business"
+        businessId={session.entity_id}
+        onCreated={() => setRefreshTick(t => t + 1)}
+      />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
@@ -6,17 +6,14 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, Pause, Edit, Plus, XCircle, Image as ImageIcon, Upload, Download, X, Send } from "lucide-react";
+import { Eye, Pause, Edit, Plus, XCircle, Image as ImageIcon, Download, Send } from "lucide-react";
 import { exportToCSV } from "@/utils/csvExport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { SendCampaignModal } from "@/components/admin/SendCampaignModal";
-import DatePicker from "react-multi-date-picker";
-import persian from "react-date-object/calendars/persian";
-import persian_fa from "react-date-object/locales/persian_fa";
-import { campaignSchema, validateOrToast } from "@/lib/validations";
+import { CampaignFormModal } from "@/components/admin/CampaignFormModal";
 
 const CampaignsPage = () => {
   const { t } = useLanguage();
@@ -26,23 +23,7 @@ const CampaignsPage = () => {
   const [addModal, setAddModal] = useState(false);
   const [cancelModal, setCancelModal] = useState<string | null>(null);
   const [sendCampaign, setSendCampaign] = useState<any>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingImages, setUploadingImages] = useState(false);
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const statuses = ["active", "pending", "scheduled", "completed", "rejected"];
-
-  const [addForm, setAddForm] = useState({
-    title: "",
-    business_id: "",
-    custom_business: "",
-    category_id: "",
-    city: "",
-    address: "",
-    description: "",
-    start_date: "",
-    end_date: "",
-  });
 
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["campaigns"],
@@ -51,24 +32,6 @@ const CampaignsPage = () => {
       return data || [];
     },
   });
-
-  // Show ALL businesses (not just active) so admin can pick pending ones too
-  const { data: businesses = [] } = useQuery({
-    queryKey: ["businesses-list-all"],
-    queryFn: async () => {
-      const { data } = await supabase.from("businesses").select("id, name").order("name");
-      return data || [];
-    },
-  });
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ["categories-list"],
-    queryFn: async () => {
-      const { data } = await supabase.from("categories").select("id, name, name_fa").order("name");
-      return data || [];
-    },
-  });
-
   useRealtimeInvalidation("campaigns", ["campaigns"]);
 
   const handleCancel = async (id: string) => {
@@ -78,109 +41,8 @@ const CampaignsPage = () => {
     setCancelModal(null);
   };
 
-  const handleImagesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    const remaining = 3 - imageFiles.length;
-    const accepted = files.slice(0, remaining);
-    const newFiles = [...imageFiles, ...accepted];
-    setImageFiles(newFiles);
-    accepted.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = () => setImagePreviews(prev => [...prev, reader.result as string]);
-      reader.readAsDataURL(file);
-    });
-    if (e.target) e.target.value = "";
-  };
-
-  const removeImage = (idx: number) => {
-    setImageFiles(prev => prev.filter((_, i) => i !== idx));
-    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
-  };
-
-  const uploadImages = async (): Promise<string[]> => {
-    if (!imageFiles.length) return [];
-    setUploadingImages(true);
-    const urls: string[] = [];
-    for (const file of imageFiles) {
-      const ext = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from("campaigns").upload(fileName, file);
-      if (error) {
-        toast.error(error.message);
-        continue;
-      }
-      const { data: pub } = supabase.storage.from("campaigns").getPublicUrl(fileName);
-      urls.push(pub.publicUrl);
-    }
-    setUploadingImages(false);
-    return urls;
-  };
-
-  const ensureBusiness = async (): Promise<string | null> => {
-    if (addForm.business_id && addForm.business_id !== "__other__") {
-      return addForm.business_id;
-    }
-    // Custom business -> create as pending
-    if (!addForm.custom_business.trim()) {
-      toast.error(t("نام کسب‌وکار را وارد کنید", "Enter business name"));
-      return null;
-    }
-    const { data, error } = await supabase
-      .from("businesses")
-      .insert({
-        name: addForm.custom_business.trim(),
-        category_id: addForm.category_id || null,
-        city: addForm.city || null,
-        status: "pending",
-      })
-      .select("id")
-      .single();
-    if (error) {
-      toast.error(error.message);
-      return null;
-    }
-    return data.id;
-  };
-
-  const handleAdd = async () => {
-    const v = validateOrToast(campaignSchema, addForm);
-    if (!v) return;
-
-    const businessId = await ensureBusiness();
-    if (!businessId) return;
-
-    const images = await uploadImages();
-
-    const { error } = await supabase.from("campaigns").insert({
-      title: addForm.title,
-      business_id: businessId,
-      category_id: addForm.category_id || null,
-      city: addForm.city || null,
-      address: addForm.address || null,
-      description: addForm.description || null,
-      start_date: addForm.start_date || null,
-      end_date: addForm.end_date || null,
-      images,
-      status: "active",
-    });
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success(t("کمپین فعال شد", "Campaign activated"));
-    setAddModal(false);
-    setAddForm({ title: "", business_id: "", custom_business: "", category_id: "", city: "", address: "", description: "", start_date: "", end_date: "" });
-    setImagePreviews([]);
-    setImageFiles([]);
-    queryClient.invalidateQueries({ queryKey: ["campaigns"] });
-    queryClient.invalidateQueries({ queryKey: ["businesses-list-all"] });
-  };
-
   if (isLoading) return <AdminLayout title={t("کمپین‌ها", "Campaigns")}><div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div></AdminLayout>;
 
-  const isCustomBusiness = addForm.business_id === "__other__";
   const coverImage = (camp: any) => (camp.images?.[0]) || camp.businesses?.logo_url;
 
   return (
@@ -313,122 +175,16 @@ const CampaignsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Campaign Modal */}
-      <Dialog open={addModal} onOpenChange={setAddModal}>
-        <DialogContent className="bg-card border-border/50 rounded-2xl max-w-md max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{t("افزودن کمپین جدید", "Add New Campaign")}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            {/* 3 Images upload */}
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">
-                {t("تصاویر کمپین (تا ۳ تصویر)", "Campaign Images (up to 3)")}
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[0, 1, 2].map(i => (
-                  <div key={i} className="relative aspect-square">
-                    {imagePreviews[i] ? (
-                      <>
-                        <img src={imagePreviews[i]} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl" />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(i)}
-                          className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </>
-                    ) : (
-                      <div
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full h-full rounded-xl border-2 border-dashed border-border/50 bg-muted/20 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-all text-muted-foreground"
-                      >
-                        <Upload className="w-4 h-4" />
-                        <span className="text-[10px] mt-1">{i + 1}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImagesSelect} />
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">{t("عنوان کمپین", "Campaign Title")} *</label>
-              <input value={addForm.title} onChange={e => setAddForm(p => ({ ...p, title: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" />
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">{t("کسب‌وکار", "Business")} *</label>
-              <select value={addForm.business_id} onChange={e => setAddForm(p => ({ ...p, business_id: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50">
-                <option value="">{t("انتخاب کنید", "Select...")}</option>
-                {businesses.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                <option value="__other__">{t("دیگر (افزودن کسب‌وکار جدید)", "Other (add new business)")}</option>
-              </select>
-            </div>
-
-            {isCustomBusiness && (
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">{t("نام کسب‌وکار جدید", "New Business Name")} *</label>
-                <input value={addForm.custom_business} onChange={e => setAddForm(p => ({ ...p, custom_business: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" placeholder={t("مثلاً: کافه آرامش", "e.g. Cafe Aramesh")} />
-              </div>
-            )}
-
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">{t("دسته‌بندی", "Category")}</label>
-              <select value={addForm.category_id} onChange={e => setAddForm(p => ({ ...p, category_id: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50">
-                <option value="">{t("انتخاب کنید", "Select...")}</option>
-                {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name_fa || c.name}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">{t("شهر", "City")}</label>
-              <input value={addForm.city} onChange={e => setAddForm(p => ({ ...p, city: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" />
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">{t("آدرس", "Address")}</label>
-              <input value={addForm.address} onChange={e => setAddForm(p => ({ ...p, address: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50" placeholder={t("آدرس دقیق", "Full address")} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">{t("تاریخ شروع (شمسی)", "Start Date (Jalali)")}</label>
-                <DatePicker
-                  calendar={persian}
-                  locale={persian_fa}
-                  value={addForm.start_date}
-                  onChange={(d: any) => setAddForm(p => ({ ...p, start_date: d ? d.toDate().toISOString().split("T")[0] : "" }))}
-                  inputClass="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50"
-                  containerClassName="w-full"
-                  calendarPosition="bottom-right"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">{t("تاریخ پایان (شمسی)", "End Date (Jalali)")}</label>
-                <DatePicker
-                  calendar={persian}
-                  locale={persian_fa}
-                  value={addForm.end_date}
-                  onChange={(d: any) => setAddForm(p => ({ ...p, end_date: d ? d.toDate().toISOString().split("T")[0] : "" }))}
-                  inputClass="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50"
-                  containerClassName="w-full"
-                  calendarPosition="bottom-right"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">{t("توضیحات آفر", "Offer Description")}</label>
-              <textarea value={addForm.description} onChange={e => setAddForm(p => ({ ...p, description: e.target.value }))} className="w-full bg-muted/30 border border-border/50 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50 h-20 resize-none" placeholder={t("آفری که می‌خواهید ارائه دهید...", "The offer you want to present...")} />
-            </div>
-
-            <Button disabled={uploadingImages} className="w-full rounded-xl gold-gradient text-primary-foreground border-0" onClick={handleAdd}>
-              {uploadingImages ? t("در حال آپلود...", "Uploading...") : t("افزودن کمپین", "Add Campaign")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Add Campaign Modal (shared component) */}
+      <CampaignFormModal
+        open={addModal}
+        onOpenChange={setAddModal}
+        mode="admin"
+        onCreated={() => {
+          queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+          queryClient.invalidateQueries({ queryKey: ["campaign-form-businesses"] });
+        }}
+      />
 
       {/* Cancel Confirm */}
       <Dialog open={!!cancelModal} onOpenChange={() => setCancelModal(null)}>
