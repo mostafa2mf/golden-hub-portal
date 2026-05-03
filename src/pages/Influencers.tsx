@@ -57,9 +57,14 @@ const InfluencersPage = () => {
       queryClient.invalidateQueries({ queryKey: ["influencers"] });
       toast.success(t(`${name} غیرفعال شد`, `${name} deactivated`));
     } else if (action === "delete") {
-      await supabase.from("influencers").delete().eq("id", id);
+      await supabase.from("influencers").update({ is_deleted: true, status: "suspended" }).eq("id", id);
       queryClient.invalidateQueries({ queryKey: ["influencers"] });
       toast.success(t(`${name} حذف شد`, `${name} deleted`));
+      setDetail(null);
+    } else if (action === "restore") {
+      await supabase.from("influencers").update({ is_deleted: false, status: "pending" }).eq("id", id);
+      queryClient.invalidateQueries({ queryKey: ["influencers"] });
+      toast.success(t(`${name} بازگردانی شد`, `${name} restored`));
       setDetail(null);
     }
   };
