@@ -87,11 +87,28 @@ const MessagesPage = () => {
     return true;
   });
 
-  const filteredInfluencers = influencerList.filter((i: any) =>
-    !newChatSearch.trim() ||
-    i.name?.toLowerCase().includes(newChatSearch.toLowerCase()) ||
-    i.handle?.toLowerCase().includes(newChatSearch.toLowerCase())
-  );
+  // Precise + fuzzy matching: precise first, fuzzy fallback
+  const norm = (s: string) => (s || "").toLowerCase().trim().replace(/^@/, "");
+  const q = norm(newChatSearch);
+  const score = (i: any) => {
+    const name = norm(i.name);
+    const handle = norm(i.handle);
+    if (!q) return 1;
+    if (name === q || handle === q) return 100;
+    if (name.startsWith(q) || handle.startsWith(q)) return 50;
+    if (name.includes(q) || handle.includes(q)) return 20;
+    // fuzzy: every char of q appears in order in name/handle
+    const fuzzy = (s: string) => { let j = 0; for (const ch of s) if (ch === q[j]) j++; return j === q.length; };
+    if (fuzzy(name) || fuzzy(handle)) return 5;
+    return 0;
+  };
+  const ranked = influencerList
+    .map((i: any) => ({ i, s: score(i) }))
+    .filter((x: any) => x.s > 0)
+    .sort((a: any, b: any) => b.s - a.s);
+  const preciseMatches = ranked.filter((x: any) => x.s >= 20).map((x: any) => x.i);
+  const fuzzyMatches = ranked.filter((x: any) => x.s < 20).map((x: any) => x.i);
+  const filteredInfluencers = preciseMatches.length ? preciseMatches : [];
 
   return (
     <AdminLayout title={t("پیام‌ها", "Messages")}>
