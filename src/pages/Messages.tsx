@@ -234,6 +234,49 @@ const MessagesPage = () => {
           </div>
         </div>
       </div>
+
+      {showNewChat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" onClick={() => setShowNewChat(false)}>
+          <div className="bg-card border border-border/40 rounded-2xl shadow-2xl w-[90%] max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-border/30">
+              <h3 className="text-sm font-bold text-foreground">{t("شروع چت با بلاگر", "Start chat with blogger")}</h3>
+              <button onClick={() => setShowNewChat(false)} className="p-1.5 rounded-lg hover:bg-muted/30"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-4 border-b border-border/30">
+              <div className="flex items-center bg-muted/30 rounded-xl border border-border/30">
+                <Search className="w-4 h-4 text-muted-foreground mx-3" />
+                <input
+                  autoFocus
+                  value={newChatSearch}
+                  onChange={e => setNewChatSearch(e.target.value)}
+                  placeholder={t("جستجوی نام یا هندل...", "Search name or handle...")}
+                  className="bg-transparent border-none outline-none text-sm py-2.5 pe-3 w-full text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto scrollbar-thin">
+              {filteredInfluencers.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">{t("بلاگری یافت نشد", "No bloggers found")}</p>
+              )}
+              {filteredInfluencers.map((inf: any) => (
+                <button
+                  key={inf.id}
+                  onClick={() => startChatWithInfluencer(inf)}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-muted/20 transition-all border-b border-border/10 text-start"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-bold text-sm">
+                    {inf.avatar_url ? <img src={inf.avatar_url} alt={inf.name} className="w-full h-full rounded-xl object-cover" /> : inf.name?.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-foreground truncate">{inf.name}</div>
+                    {inf.handle && <div className="text-xs text-muted-foreground truncate">@{inf.handle}</div>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };
