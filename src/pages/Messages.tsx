@@ -48,6 +48,30 @@ const MessagesPage = () => {
   });
 
   useRealtimeInvalidation("conversations", ["conversations"]);
+  useRealtimeInvalidation("chat_messages", ["conversations"]);
+
+  // When opening a chat, mark its messages as read + reset unread count
+  useEffect(() => {
+    if (!selectedChat) return;
+    (async () => {
+      await supabase.from("chat_messages").update({ is_read: true })
+        .eq("conversation_id", selectedChat).eq("is_read", false);
+      await supabase.from("conversations").update({ unread_count: 0 }).eq("id", selectedChat);
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["chat_messages", selectedChat] });
+    })();
+  }, [selectedChat]);
+
+  // Realtime subscription specific to currently open chat for instant message updates
+  useEffect(() => {
+    if (!selectedChat) return;
+    const channel = supabase
+      .channel(`open-chat-${selectedChat}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${selectedChat}` },
+        () => queryClient.invalidateQueries({ queryKey: ["chat_messages", selectedChat] }))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedChat, queryClient]);
 
   const selected = conversations.find((c: any) => c.id === selectedChat);
 
