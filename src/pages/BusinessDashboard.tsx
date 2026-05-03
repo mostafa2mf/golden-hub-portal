@@ -58,7 +58,7 @@ const BusinessDashboard = () => {
       setLoadingData(false);
     };
     fetchData();
-  }, [session]);
+  }, [session, refreshTick]);
 
   const handleSaveProfile = async () => {
     if (!session) return;
