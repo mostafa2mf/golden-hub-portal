@@ -246,7 +246,9 @@ const MessagesPage = () => {
                         <p className="text-foreground">{msg.content}</p>
                         <div className="flex items-center justify-end gap-1.5 mt-1.5">
                           <span className="text-[10px] text-muted-foreground/70">{new Date(msg.created_at).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}</span>
-                          {msg.sender_role === "admin" && <CheckCheck className="w-3.5 h-3.5 text-primary/60" />}
+                          {msg.sender_role === "admin" && (msg.is_read
+                            ? <CheckCheck className="w-3.5 h-3.5 text-primary" />
+                            : <Check className="w-3.5 h-3.5 text-muted-foreground/60" />)}
                         </div>
                       </div>
                     </div>
