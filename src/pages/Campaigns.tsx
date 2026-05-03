@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
@@ -6,17 +6,14 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, Pause, Edit, Plus, XCircle, Image as ImageIcon, Upload, Download, X, Send } from "lucide-react";
+import { Eye, Pause, Edit, Plus, XCircle, Image as ImageIcon, Download, Send } from "lucide-react";
 import { exportToCSV } from "@/utils/csvExport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { SendCampaignModal } from "@/components/admin/SendCampaignModal";
-import DatePicker from "react-multi-date-picker";
-import persian from "react-date-object/calendars/persian";
-import persian_fa from "react-date-object/locales/persian_fa";
-import { campaignSchema, validateOrToast } from "@/lib/validations";
+import { CampaignFormModal } from "@/components/admin/CampaignFormModal";
 
 const CampaignsPage = () => {
   const { t } = useLanguage();
